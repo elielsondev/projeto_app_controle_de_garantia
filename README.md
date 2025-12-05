@@ -27,6 +27,7 @@
     [ ] - Criação da página EditProfile;
 
 [ ] - Instalação de pacotes:
+
     [ ] - npm install react-router-dom@v6
     Documentação: reactrouter.com/6.30.2
 
@@ -42,11 +43,3 @@
 [ ] - Instalação de fonte Be Vietnam Pro
 
 Documentação: fonts.google.com/specimen/Be+Vietnam+Pro
-
-```css
-.be-vietnam-pro-black {
-    font-family: "Be Vietnam Pro", sans-serif;
-    font-weight: 900;
-    font-style: normal;
-}
-```
