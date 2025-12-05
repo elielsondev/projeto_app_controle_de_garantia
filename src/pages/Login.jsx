@@ -1,6 +1,7 @@
 import React from "react";
 import "../style/Login.css";
 import logo from "../assets/logo.png";
+import { Link } from "react-router-dom";
 
 // Componente de login de usuário
 function Login() {
@@ -17,7 +18,7 @@ function Login() {
           name="email"
           id="email-login"
           placeholder="Email"
-          className=""
+          className="inputs"
         />
 
         <input
@@ -25,10 +26,14 @@ function Login() {
           name="password"
           id="password-login"
           placeholder="Senha"
-          className=""
+          className="inputs"
         />
 
-        <button className="be-vietnam-pro-bold">Entrar</button>
+          <Link to="/">
+            <span className="be-vietnam-pro-bold text-white">
+              Entrar
+            </span>
+          </Link>
 
         <label htmlFor="conectado" className="be-vietnam-pro-regular">
           <input type="radio" name="conectado" id="conectado" />
@@ -42,7 +47,7 @@ function Login() {
         </div>
         <hr />
         <div>
-          <a href="#" className="be-vietnam-pro-regular">
+          <a href="/register" className="be-vietnam-pro-regular">
             Não tem uma conta? Cadastre-se
           </a>
         </div>

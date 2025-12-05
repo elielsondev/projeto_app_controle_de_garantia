@@ -13,7 +13,7 @@ function Welcome() {
   return (
     <div className='welcome-container'>
       <img src={logo} alt="logo aponti" title='Logo Aponti' width={150} />
-      <h1 className='be-vietnam-pro-black text-4xl'>apontiNote</h1>
+      <h1 className='be-vietnam-pro-white text-4xl'>apontiNote</h1>
       <BlinkBlur color="#724ebf" size="small" text="Loading" textColor="#bfbfbf" />
     </div>
   )
