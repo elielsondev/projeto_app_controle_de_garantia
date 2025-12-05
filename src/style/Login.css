@@ -1,0 +1,89 @@
+/* Lista de cores para o projeto */
+:root {
+  --fonte-white: #ffffff;
+  --formularios: #bfbfbf;
+  --principal-da-logo: #5f1bf2;
+  --secundaria-degrade: #724ebf;
+}
+
+/* Estilos para a página de boas-vindas */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rem;
+  height: 100vh;
+  background-color: var(--principal-da-logo);
+}
+
+.be-vietnam-pro-black {
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-weight: 900;
+  font-style: normal;
+  color: var(--principal-da-logo);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: var(--fonte-white);
+  padding: 1rem;
+  border-radius: 20px;
+    box-shadow: 9px 11px 12px -6px rgba(0, 0, 0, 0.75);
+  -webkit-box-shadow: 9px 11px 12px -6px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: 9px 11px 12px -6px rgba(0, 0, 0, 0.75);
+}
+
+#email-login,
+#password-login {
+  padding: 0.5rem;
+  background-color: var(--formularios);
+  color: #000000;
+  border-radius: 12px;
+  border-style: none;
+  cursor: pointer;
+}
+
+button {
+  padding: 0.2rem;
+  background-color: var(--principal-da-logo);
+  color: var(--fonte-white);
+  border-radius: 8px;
+  border-style: none;
+  cursor: pointer;
+}
+
+button:active {
+  background-color: var(--secundaria-degrade);
+}
+
+label {
+  color: var(--principal-da-logo);
+  gap: 2px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+#conectado {
+  accent-color: var(--principal-da-logo);
+  cursor: pointer;
+  margin: 5px;
+}
+
+a {
+  color: var(--principal-da-logo);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  border: 0.5px solid var(--formularios);
+}

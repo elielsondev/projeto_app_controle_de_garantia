@@ -1,9 +1,17 @@
+import { Route, Routes } from "react-router-dom";
 import "./App.css";
+import Welcome from "./pages/Welcome";
+import Login from "./pages/Login";
 
-export default function App() {
+function App() {
   return (
-    <div className="App">
-      <h1>Hello, World!!</h1>
+    <div className="text-center">
+      <Routes>
+        <Route path="/" element={ <Welcome /> } />
+        <Route path="/login" element={ <Login /> } />
+      </Routes>
     </div>
   );
 }
+
+export default App;
