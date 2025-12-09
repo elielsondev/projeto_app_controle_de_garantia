@@ -1,3 +1,4 @@
+
 :root {
   --roxo-principal: #6a1b9a; /* Cor roxa da imagem */
   --roxo-claro: #f3e5f5; /* Cor de fundo suave */
@@ -10,7 +11,7 @@
 /*  Layout Principal  */
 
 .tela-inicial-container {
-  max-width: 600px; 
+  max-width: auto; 
   margin: 0 auto;
   min-height: 100vh;
   background-color: #f8f8f8;
@@ -109,10 +110,10 @@
   overflow: hidden;
 }
 
-.card-resumo.total { background-color: #e3f2fd; } /* Azul claro */
-.card-resumo.vencendo { background-color: #fff3e0; } /* Laranja claro */
-.card-resumo.ativas { background-color: #e8f5e9; } /* Verde claro */
-.card-resumo.vencidas { background-color: #ffebee; } /* Vermelho claro */
+.card-resumo.total { background-color: #37a0eb; } /* Azul claro */
+.card-resumo.vencendo { background-color: #e9df52; } /* Laranja claro */
+.card-resumo.ativas { background-color: #4ddf59; } /* Verde claro */
+.card-resumo.vencidas { background-color: #ee5168; } /* Vermelho claro */
 
 
 .card-value {
@@ -133,7 +134,7 @@
     right: 5px;
     transform: translateY(-50%);
     font-size: 2.2em;
-    opacity: 0.15; 
+    opacity: 0.75; 
 }
 
 /*  Lista de Notas  */

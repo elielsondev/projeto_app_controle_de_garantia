@@ -43,7 +43,7 @@ const Home = () => {
   const notas = [
     {
       id: 1,
-      titulo: 'Compras de Ventiladores',
+      titulo: 'Monitor Dell',
       fornecedor: 'Magazine Luiza',
       compraData: '12/02/2025',
       tipoNota: 'Garantia Normal',
@@ -52,7 +52,7 @@ const Home = () => {
     },
     {
       id: 2,
-      titulo: 'Compras de Ventiladores',
+      titulo: 'Teclado Dell',
       fornecedor: 'Magazine Luiza',
       compraData: '12/02/2025',
       tipoNota: 'Garantia Estendida',
@@ -61,7 +61,7 @@ const Home = () => {
     },
     {
       id: 3,
-      titulo: 'Compras de Ventiladores',
+      titulo: 'Mouse Dell',
       fornecedor: 'Magazine Luiza',
       compraData: '12/02/2025',
       tipoNota: 'Garantia Estendida',
