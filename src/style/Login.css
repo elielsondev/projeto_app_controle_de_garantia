@@ -46,6 +46,7 @@
     box-shadow: 9px 11px 12px -6px rgba(0, 0, 0, 0.75);
   -webkit-box-shadow: 9px 11px 12px -6px rgba(0, 0, 0, 0.75);
   -moz-box-shadow: 9px 11px 12px -6px rgba(0, 0, 0, 0.75);
+  width: 22rem;
 }
 
 .inputs{
