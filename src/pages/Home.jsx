@@ -75,7 +75,19 @@ const Home = () => {
     <div className="tela-inicial-container">
       {/* Barra Superior */}
       <header className="header-bar">
-        <button className="menu-button">☰</button>
+        <button className="menu-button">
+            <svg 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                img="./assets/menu.png"
+            >
+            <path 
+            d="M3 18H21V16H3V18ZM3 13H21V11H3V13ZM3 6V8H21V6H3Z" 
+            fill="currentColor"
+            /></svg>
+        </button>
         <button className="profile-button">👤</button>
       </header>
 
