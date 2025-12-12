@@ -1,9 +1,21 @@
-import "App.css";
+import { Route, Routes } from "react-router-dom";
+import "./App.css";
+import Welcome from "./pages/Welcome";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Home from "./pages/Home";
 
-export default function App() {
+function App() {
   return (
-    <div className="App">
-      <h1>Hello, World!</h1>
+    <div className="text-center">
+      <Routes>
+        <Route path="/" element={ <Home /> } />
+        <Route path="/welcome" element={ <Welcome /> } />
+        <Route path="/login" element={ <Login /> } />
+        <Route path="/register" element={ <Register /> } />
+      </Routes>
     </div>
   );
 }
+
+export default App;
