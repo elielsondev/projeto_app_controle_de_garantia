@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 // Componente de login de usuário
 function Login() {
   return (
-    <div className="login-container">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#5f1bf2]">
       <form className="login-form">
         <div className="flex items-center gap-2 mb-6 justify-center">
           <img src={logo} alt="" width={50} />
