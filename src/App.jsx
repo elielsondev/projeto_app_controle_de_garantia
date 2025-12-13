@@ -9,9 +9,9 @@ function App() {
   return (
     <div className="text-center">
       <Routes>
-        <Route path="/" element={ <Home /> } />
-        <Route path="/welcome" element={ <Welcome /> } />
+        <Route path="/" element={ <Welcome /> } />
         <Route path="/login" element={ <Login /> } />
+        <Route path="/home" element={ <Home /> } />
         <Route path="/register" element={ <Register /> } />
       </Routes>
     </div>
