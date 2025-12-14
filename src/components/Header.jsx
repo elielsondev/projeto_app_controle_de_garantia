@@ -1,13 +1,15 @@
-import perfilIcon from "../assets/perfil.png"
+import perfilIcon from "../assets/perfil.png";
+import { Squash as Hamburger } from 'hamburger-react'
 
 const Header = () => {
   return (
     <header className="flex justify-between items-center px-5 h-[60px] bg-purple-800 text-black shadow">
-      <button>
+      <Hamburger size={20} color="#ffffff" />
+      {/* <button>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M3 18H21V16H3V18ZM3 13H21V11H3V13ZM3 6H21V8H3V6Z" />
         </svg>
-      </button>
+      </button> */}
       <button
                 className="p-2 rounded-lg hover:bg-gray-100 transition"
                 aria-label="perfil"
