@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import '../style/Welcome.css';
 import logo from '../assets/logo.png';
 import { BlinkBlur } from 'react-loading-indicators';

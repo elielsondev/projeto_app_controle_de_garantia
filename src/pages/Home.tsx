@@ -1,8 +1,8 @@
-import Header from "../components/Header";
-import SearchBar from "../components/SearchBar";
-import SummaryCard from "../components/SummaryCard";
-import NoteItem from "../components/NoteItem";
-import FloatingButton from "../components/FloatingButton";
+import Header from "../components/Header.tsx";
+import SearchBar from "../components/SearchBar.tsx";
+import SummaryCard from "../components/SummaryCard.tsx";
+import NoteItem from "../components/NoteItem.tsx";
+import FloatingButton from "../components/FloatingButton.tsx";
 
 const Home = () => {
   const resumo = [

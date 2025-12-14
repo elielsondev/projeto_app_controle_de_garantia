@@ -1,4 +1,4 @@
-import React from 'react'
+// import React from 'react'
 
 // Componente de registro de nota
 function RegistrationNote() {

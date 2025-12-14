@@ -1,4 +1,4 @@
-const SummaryCard = ({ title, value, icon, status }) => {
+const SummaryCard = ({ title, value, icon, status } : any) => {
   const colors = {
     total: "bg-[#37a0eb]",
     vencendo: "bg-[#e9df52]",
