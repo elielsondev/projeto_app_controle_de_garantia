@@ -40,6 +40,9 @@
     [ ] - npm install react-loading-indicators
     Documentação: https://react-loading-indicators.netlify.app/
 
+    [ ] - npm install hamburger-react
+    Documentação: https://hamburger-react.netlify.app/
+
 [ ] - Instalação de fonte Be Vietnam Pro
 
 Documentação: fonts.google.com/specimen/Be+Vietnam+Pro
