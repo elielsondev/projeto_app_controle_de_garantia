@@ -65,7 +65,7 @@
   font-style: normal;
 }
 
-span {
+button {
   padding: 0.2rem;
   background-color: var(--principal-da-logo);
   color: var(--fonte-white);

@@ -1,7 +1,7 @@
 // import React from "react";
 import "../style/Login.css";
 import logo from "../assets/logo.png";
-import { Link, Navigate } from "react-router-dom";
+import { Link} from "react-router-dom";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -11,7 +11,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = (e : React.FormEvent) => {
     e.preventDefault();
     
     const users = JSON.parse(localStorage.getItem("users") || "[]");
