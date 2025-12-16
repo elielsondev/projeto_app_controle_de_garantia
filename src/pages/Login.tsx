@@ -2,9 +2,22 @@
 import "../style/Login.css";
 import logo from "../assets/logo.png";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 // Componente de login de usuário
 function Login() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  // Função para lidar com o envio do formulário de login
+  const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // Lógica para lidar com o envio do formulário de login
+    const email = event.currentTarget.email.value;
+    const password = event.currentTarget.password.value;
+    console.log("Email:", email);
+    console.log("Password:", password);
+  };
+
   return (
     <div className="login-container">
       <form className="login-form">
@@ -19,6 +32,7 @@ function Login() {
           id="email-login"
           placeholder="Email"
           className="inputs"
+
         />
 
         <input
@@ -29,11 +43,14 @@ function Login() {
           className="inputs"
         />
 
-          <Link to="/">
-            <span className="be-vietnam-pro-bold text-white">
-              Entrar
-            </span>
-          </Link>
+        <Link to="/">
+          <span 
+            onClick={handleLogin}
+            className="be-vietnam-pro-bold text-white"
+          >
+            Entrar
+          </span>
+        </Link>
 
         <label htmlFor="conectado" className="be-vietnam-pro-regular">
           <input type="radio" name="conectado" id="conectado" />

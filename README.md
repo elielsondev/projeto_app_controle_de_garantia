@@ -43,6 +43,9 @@
     [ ] - npm install hamburger-react
     Documentação: https://hamburger-react.netlify.app/
 
+    [ ] - npm i lucide-react
+    Documentação: https://lucide.dev/
+
 [ ] - Instalação de fonte Be Vietnam Pro
 
 Documentação: fonts.google.com/specimen/Be+Vietnam+Pro
