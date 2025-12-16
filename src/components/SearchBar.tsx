@@ -3,8 +3,8 @@ import lupaIcon from "../assets/lupa.png";
 
 const SearchBar = () => {
   return (
-    <div className="bg-purple-800 px-5 pb-4">
-      <div className="flex items-center bg-white rounded-xl px-4 py-2 shadow gap-2">
+    <div className="flex justify-center items-center">
+      <div className="flex items-center bg-gray-50 rounded-xl shadow gap-3 w-[900px] h-9 m-5 p-5">
         <input
           type="text"
           placeholder="Pesquisar Notas"
@@ -18,7 +18,7 @@ const SearchBar = () => {
           <img
             src={lupaIcon}
             alt="busca"
-            className="w-5 h-5 object-contain"
+            className="w-5 h-5 object-contain bg-current"
           />
         </button>
 
@@ -29,7 +29,7 @@ const SearchBar = () => {
           <img
             src={filtroIcon}
             alt="Filtrar"
-            className="w-5 h-5 object-contain"
+            className="w-5 h-5 object-contain bg-current"
           />
         </button>
       </div>

@@ -1,6 +1,6 @@
 const NoteItem = ({ note }) => {
   const statusColor =
-    note.status === "Em garantia" ? "bg-green-500" : "bg-red-500";
+    note.status === "Em garantia" ? "text-green-500" : "text-red-500";
 
   return (
     <div className="bg-purple-100 rounded-xl p-4 shadow mb-4">
@@ -17,7 +17,7 @@ const NoteItem = ({ note }) => {
           R$ {note.valor.toFixed(2).replace(".", ",")}
         </span>
         <span
-          className={`px-3 py-1 rounded-full text-xs text-white ${statusColor}`}
+          className={`px-3 py-1 rounded-full text-sm text-black font-bold ${statusColor}`}
         >
           {note.status}
         </span>
