@@ -2,50 +2,62 @@
 
 ## branch playground-code documentação
 
-[ ] - Criação de pasta /components dentro da pasta /src;
 
-[ ] - Criação de pasta /pages dentro da pasta /src;
 
-[ ] - Criação da pasta components;
+* [ ] **Project Structure**
+* [ ] Create `/components` folder inside `/src`
+* [ ] Create `/pages` folder inside `/src`
 
-[ ] - Criação da pasta pages:
 
-    [ ] - Criação da página Welcome;
+* [ ] **Pages Creation**
+* [ ] Welcome Page
+* [ ] Login Page
+* [ ] Register Page
+* [ ] Home Page
+* [ ] NoteScreen Page
+* [ ] RegistrationNote Page
+* [ ] UserScreen Page
+* [ ] EditProfile Page
 
-    [ ] - Criação da página Login;
 
-    [ ] - Criação da página Register;
+* [ ] **Package Installation**
+* [ ] **React Router DOM v6**
+* `npm install react-router-dom@v6`
+* Documentation: [reactrouter.com](https://reactrouter.com/en/main)
 
-    [ ] - Criação da página Home;
 
-    [ ] - Criação da página NoteScreen;
+* [ ] **SweetAlert2**
+* `npm install sweetalert2`
+* Documentation: [sweetalert2.github.io](https://sweetalert2.github.io/#download)
 
-    [ ] - Criação da página RegistrationNote;
 
-    [ ] - Criação da página UserScreen;
+* [ ] **Tailwind CSS (Vite)**
+* `npm install tailwindcss @tailwindcss/vite`
+* Documentation: [tailwindcss.com](https://tailwindcss.com/docs/installation/using-vite)
 
-    [ ] - Criação da página EditProfile;
 
-[ ] - Instalação de pacotes:
+* [ ] **React Loading Indicators**
+* `npm install react-loading-indicators`
+* Documentation: [react-loading-indicators.netlify.app](https://react-loading-indicators.netlify.app/)
 
-    [ ] - npm install react-router-dom@v6
-    Documentação: reactrouter.com/6.30.2
 
-    [ ] - npm install sweetalert2
-    Documentação: https://sweetalert2.github.io/#download
+* [ ] **Hamburger React**
+* `npm install hamburger-react`
+* Documentation: [hamburger-react.netlify.app](https://hamburger-react.netlify.app/)
 
-    [ ] - npm install tailwindcss @tailwindcss/vite
-    Documentação: https://tailwindcss.com/docs/installation/using-vite
 
-    [ ] - npm install react-loading-indicators
-    Documentação: https://react-loading-indicators.netlify.app/
+* [ ] **Lucide React**
+* `npm i lucide-react`
+* Documentation: [lucide.dev](https://lucide.dev/)
 
-    [ ] - npm install hamburger-react
-    Documentação: https://hamburger-react.netlify.app/
 
-    [ ] - npm i lucide-react
-    Documentação: https://lucide.dev/
 
-[ ] - Instalação de fonte Be Vietnam Pro
 
-Documentação: fonts.google.com/specimen/Be+Vietnam+Pro
+* [ ] **Assets & Styling**
+* [ ] Install **Be Vietnam Pro** font
+* Documentation: [Google Fonts](https://fonts.google.com/specimen/Be+Vietnam+Pro)
+
+
+
+
+
