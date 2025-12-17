@@ -1,5 +1,5 @@
 import { useState } from "react";
-import perfilIcon from "../assets/perfil.png";
+import userIcon from "../assets/userIcon.png";
 import { Squash as Hamburger } from "hamburger-react";
 import Sidebar from "./Sidebar";
 
@@ -8,7 +8,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="flex justify-between items-center px-5 h-15 bg-purple-800 shadow">
+      <header className="flex justify-between items-center px-8 h-[60px] bg-linear-to-r from-[#724EBF] via-[#724EBF] via-11% to-[rgba(81,31,191,0.98)] shadow">
         <Hamburger
           size={20}
           color="#ffffff"
@@ -21,9 +21,9 @@ const Header = () => {
           aria-label="perfil"
         >
           <img
-            src={perfilIcon}
+            src={userIcon}
             alt="perfil"
-            className="w-6 h-6 object-contain"
+            className="w-7 h-7 object-contain"
           />
         </button>
       </header>

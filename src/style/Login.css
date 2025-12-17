@@ -67,7 +67,7 @@
 
 button {
   padding: 0.2rem;
-  background-color: var(--principal-da-logo);
+  /*background-color: var(--principal-da-logo);*/
   color: var(--fonte-white);
   border-radius: 8px;
   border-style: none;
