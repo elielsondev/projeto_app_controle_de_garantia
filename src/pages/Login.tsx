@@ -1,7 +1,6 @@
 // import React from "react";
-import "../style/Login.css";
 import logo from "../assets/logo.png";
-import { Link} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -10,6 +9,7 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = (e : React.FormEvent) => {
     e.preventDefault();
@@ -22,16 +22,29 @@ function Login() {
     );
 
     if (user) {
-      // Redirecionar com react router dom para página /home após login bem-sucedido
+      // Guardar estado de login no localStorage apenas se "Manter-me conectado" estiver marcado
+      if (rememberMe) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("loggedUserEmail", user.email);
+      } else {
+        // Se não marcou "Manter-me conectado", usa sessionStorage (não persiste ao recarregar)
+        sessionStorage.setItem("isLoggedIn", "true");
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("rememberedEmail");
+      }
+      
+      localStorage.setItem("loggedUserEmail", user.email);
+
       // SweetAlert2 para mostrar mensagem de sucesso
       Swal.fire({
         title: 'Login bem-sucedido!',
         icon: 'success',
         confirmButtonText: 'OK'
       }).then(() => {
-        window.location.href = "/home";
+        navigate("/home");
       });
-      return 
+      return;
     } else {
       // SweetAlert2 para mostrar mensagem de erro
       Swal.fire({
@@ -49,18 +62,27 @@ function Login() {
   // Verificar se o usuário já está logado ao carregar o componente 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (isLoggedIn) {
-      // Redirecionar para a página /home se o usuário estiver logado
-      window.location.href = "/home";
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+
+    // Só redireciona para /home se tiver "Manter-me conectado" ativo
+    if (isLoggedIn === "true") {
+      navigate("/home");
     }
-  }, []);
+
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, [navigate]);
 
   return (
-    <div className="login-container">
-      <form className="login-form">
-        <div className="flex items-center gap-2 mb-6 justify-center">
-          <img src={logo} alt="" width={50} />
-          <h2 className="be-vietnam-pro-black text-2xl mb-4">apontiNote</h2>
+    <div className="be-vietnam-pro-black flex flex-col items-center justify-center gap-8 min-h-screen bg-violet-700">
+      <form className="flex flex-col gap-2 bg-white p-4 rounded-2xl shadow-lg w-88">
+        <div className="flex items-center justify-center gap-2 mb-6 mt-3">
+          <img src={logo} alt="Logo Aponti" width={50} />
+          <h2 className="text-2xl font-bold text-[#5f1bf2] leading-none"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.25)" }}>
+              apontiNote</h2>
         </div>
 
         <input
@@ -70,7 +92,7 @@ function Login() {
           onChange={(e) => setEmail(e.target.value)}
           id="email-login"
           placeholder="Email"
-          className="inputs"
+          className="px-5 py-2 mx-4 mb-1 bg-[#bfbfbf] text-black rounded-xl border-none outline-none cursor-pointer"
         />
 
         <input
@@ -80,37 +102,43 @@ function Login() {
           onChange={(e) => setPassword(e.target.value)}
           id="password-login"
           placeholder="Senha"
-          className="inputs"
+          className="px-5 py-2 mx-4 bg-[#bfbfbf] text-black rounded-xl border-none outline-none cursor-pointer"
         />
 
         <button
           onClick={handleLogin}
-          className="be-vietnam-pro-bold text-white"
+          className="m-3 font-bold text-white py-2 rounded-xl bg-[#5f1bf2] hover:bg-[#724ebf] transition-colors"
         >
           Entrar
         </button>
 
-        <label htmlFor="conectado" className="be-vietnam-pro-regular">
-          <input
-            type="radio"
-            name="conectado"
-            value="conectado"
-            className="inputs"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            id="conectado"
-          />
-          Manter-me conectado
-        </label>
+        <label className="cursor-pointer select-none">
+  <input
+    type="checkbox"
+    checked={rememberMe}
+    onChange={(e) => setRememberMe(e.target.checked)}
+    className="
+      appearance-none
+      w-3.5 h-3.5 mr-2
+      rounded-full
+      border-2 border-[#5f1bf2]
+      cursor-pointer
+      transition-all
+      checked:bg-[#5f1bf2]
+      checked:border-[#5f1bf2]
+    "
+  />
+  <span className="text-black">Manter-me conectado</span>
+</label>
 
         <div>
-          <a href="#" className="be-vietnam-pro-regular ">
+          <a href="#" className="text-black hover:underline">
             Esqueceu a senha?
           </a>
         </div>
-        <hr />
+        <hr className="border-t border-[#724EBF] mb-2" />
         <div>
-          <Link to="/register" className="be-vietnam-pro-regular">
+          <Link to="/register" className=" text-black hover:underline">
             Não tem uma conta? Cadastre-se
           </Link>
         </div>

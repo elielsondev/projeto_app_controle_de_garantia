@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header.tsx";
 import SearchBar from "../components/SearchBar.tsx";
 import SummaryCard from "../components/SummaryCard.tsx";
@@ -6,6 +8,19 @@ import FloatingButton from "../components/FloatingButton.tsx";
 import { resumo, notas, type ResumoItem, type Nota } from "../data";
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  // Verificar se o usuário está logado ao carregar a página
+  useEffect(() => {
+    const isLoggedInLocal = localStorage.getItem("isLoggedIn");
+    const isLoggedInSession = sessionStorage.getItem("isLoggedIn");
+    
+    // Verifica tanto localStorage (persistente) quanto sessionStorage (sessão atual)
+    if (isLoggedInLocal !== "true" && isLoggedInSession !== "true") {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
