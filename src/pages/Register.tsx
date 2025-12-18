@@ -134,6 +134,16 @@ function Register() {
         >
           Registrar
         </button>
+        {/* Link para login */}
+        <p className="text-center text-sm">
+          Já possui uma conta?{" "}
+          <span
+            className="text-blue-500 hover:underline cursor-pointer"
+            onClick={() => navigate("/login")}
+          >
+            Faça login
+          </span>
+        </p>
       </form>
     </div>
   );
