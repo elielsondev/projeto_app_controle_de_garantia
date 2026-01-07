@@ -11,70 +11,46 @@ export interface Nota {
     purchaseDate: string;
     typeNote: string;
     value: number;
-    status: string;
+    status: "Ativa" | "Vencida" | "Vencendo";
 }
 
-export const resumo: ResumoItem[] = [
-    { title: "Total", value: 12, status: "total" },
-    { title: "Vencendo", value: 3, status: "expiring" },
-    { title: "Ativas", value: 12, status: "active" },
-    { title: "Vencidas", value: 3, status: "expired" },
+export const notas: Nota[] = [
+  {
+    id: 1,
+    title: "Ventilador",
+    store: "Atacadão",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Normal",
+    value: 1000,
+    status: "Ativa",
+  },
+  {
+    id: 2,
+    title: "Teclado Dell",
+    store: "Magazine Luiza",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Estendida",
+    value: 1000,
+    status: "Vencida",
+  },
+  {
+    id: 3,
+    title: "Mouse Dell",
+    store: "Magazine Luiza",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Normal",
+    value: 1000,
+    status: "Vencendo",
+  },
+  {
+    id: 4,
+    title: "Notebook Gamer",
+    store: "Magazine Luiza",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Estendida",
+    value: 8000,
+    status: "Ativa",
+  }
 ];
 
-export const notas: Nota[] = [
-    {
-        id: 1,
-        title: "Monitor Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Normal",
-        value: 1000,
-        status: "Em garantia",
-    },
-    {
-        id: 2,
-        title: "Teclado Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Estendida",
-        value: 1000,
-        status: "Vencida",
-    },
-    {
-        id: 1,
-        title: "Monitor Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Normal",
-        value: 1000,
-        status: "Em garantia",
-    },
-    {
-        id: 2,
-        title: "Teclado Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Estendida",
-        value: 1000,
-        status: "Vencida",
-    },
-    {
-        id: 1,
-        title: "Monitor Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Normal",
-        value: 1000,
-        status: "Em garantia",
-    },
-    {
-        id: 2,
-        title: "Teclado Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Estendida",
-        value: 1000,
-        status: "Vencida",
-    },
-];
 
