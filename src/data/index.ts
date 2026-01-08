@@ -15,6 +15,7 @@ export interface Nota {
 }
 
 export const notas: Nota[] = [
+<<<<<<< HEAD
     {
         id: 1,
         title: "Ventilador",
@@ -51,5 +52,44 @@ export const notas: Nota[] = [
         value: 8000,
         status: "Ativa",
     }
+=======
+  {
+    id: 1,
+    title: "Ventilador",
+    store: "Atacadão",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Normal",
+    value: 1000,
+    status: "Ativa",
+  },
+  {
+    id: 2,
+    title: "Teclado Dell",
+    store: "Magazine Luiza",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Estendida",
+    value: 1000,
+    status: "Vencida",
+  },
+  {
+    id: 3,
+    title: "Mouse Dell",
+    store: "Magazine Luiza",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Normal",
+    value: 1000,
+    status: "Vencendo",
+  },
+  {
+    id: 4,
+    title: "Notebook Gamer",
+    store: "Magazine Luiza",
+    purchaseDate: "12/02/2025",
+    typeNote: "Garantia Estendida",
+    value: 8000,
+    status: "Ativa",
+  }
+>>>>>>> 915d898f94c26d8dcc42cbad101d4ce21dc50c73
 ];
+
 

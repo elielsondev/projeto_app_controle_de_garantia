@@ -6,6 +6,7 @@ interface NoteItemProps {
 }
 
 const NoteItem = ({ note }: NoteItemProps) => {
+<<<<<<< HEAD
   const navigate = useNavigate();
   const statusColor =
     note.status === "Ativa"
@@ -17,6 +18,14 @@ const NoteItem = ({ note }: NoteItemProps) => {
   const handleClick = () => {
     navigate("/note", { state: { note } });
   }
+=======
+    const statusColor =
+    note.status === "Ativa"
+    ? "text-[#478E2C]"
+    : note.status === "Vencendo"
+    ? "text-[#CA8A04]"
+    : "text-[#D41414]";
+>>>>>>> 915d898f94c26d8dcc42cbad101d4ce21dc50c73
 
   return (
     <div onClick={handleClick} className="bg-[#724EBF]/30 rounded-xl p-4 shadow text-left transition-transform duration-150 hover:scale-105 md:hover:scale-105">

@@ -2,6 +2,7 @@
 import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 // Componente de registro de usuário / cadastro
 function Register() {
@@ -16,15 +17,29 @@ function Register() {
     e.preventDefault();
     // Verificar se as senhas coincidem
     if (password !== confirmPassword) {
-      alert("As senhas não coincidem");
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "As senhas não coincidem",
+      });
       return;
     }
-    
+
     // Verificar se o usuário já existe no localStorage
     const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    const userExists = existingUsers.some((user: { email: string }) => user.email === email);
+    const userExists = existingUsers.some(
+      (user: { email: string }) => user.email === email
+    );
     if (userExists) {
-      alert("Usuário já cadastrado com este email");
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Usuário já cadastrado com este email",
+      }).then(() => {
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+      });
       return;
     }
 
@@ -43,9 +58,14 @@ function Register() {
     setPassword("");
     setConfirmPassword("");
 
-    // Feedback simples e redirecionar para login
-    alert("Cadastro realizado com sucesso! Faça login para continuar.");
-    navigate("/login");
+    // SweetAlert2 para mostrar mensagem de sucesso
+    Swal.fire({
+      title: "Cadastro realizado com sucesso! Faça login para continuar.",
+      icon: "success",
+      confirmButtonText: "OK",
+    }).then(() => {
+      navigate("/login");
+    });
   };
 
   return (
@@ -56,9 +76,11 @@ function Register() {
       >
         <div className="flex items-center justify-center gap-2 mb-6 mt-3">
           <img src={logo} alt="Logo Aponti" width={50} />
-          <h2 className="text-2xl font-bold text-[#5f1bf2] leading-none"
-            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.25)" }}>
-              apontiNote
+          <h2
+            className="text-2xl font-bold text-[#5f1bf2] leading-none"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.25)" }}
+          >
+            apontiNote
           </h2>
         </div>
 
@@ -112,6 +134,16 @@ function Register() {
         >
           Registrar
         </button>
+        {/* Link para login */}
+        <p className="text-center text-sm">
+          Já possui uma conta?{" "}
+          <span
+            className="text-blue-500 hover:underline cursor-pointer"
+            onClick={() => navigate("/login")}
+          >
+            Faça login
+          </span>
+        </p>
       </form>
     </div>
   );
