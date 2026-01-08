@@ -6,13 +6,17 @@ interface NoteItemProps {
 }
 
 const NoteItem = ({ note }: NoteItemProps) => {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const statusColor =
-    note.status === "Em garantia" ? "text-[#478E2C]" : "text-[#D41414]";
+    note.status === "Ativa"
+      ? "text-[#478E2C]"
+      : note.status === "Vencendo"
+        ? "text-[#CA8A04]"
+        : "text-[#D41414]";
 
   const handleClick = () => {
-      navigate("/note", { state: { note } });
-    }
+    navigate("/note", { state: { note } });
+  }
 
   return (
     <div onClick={handleClick} className="bg-[#724EBF]/30 rounded-xl p-4 shadow text-left transition-transform duration-150 hover:scale-105 md:hover:scale-105">
