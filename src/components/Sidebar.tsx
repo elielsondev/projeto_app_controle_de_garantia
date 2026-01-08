@@ -3,7 +3,6 @@ import {
   FileText,
   Trash2,
   Settings,
-  ChevronDown,
   LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -66,16 +65,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               <button className="flex items-center gap-2 font-medium">
                 <FileText size={18} />
                 Minhas Notas
-                <ChevronDown size={16} />
               </button>
-
-              <div className="mt-2 ml-6 space-y-2 text-sm">
-                <button className="px-3 py-1 rounded-full bg-white/20">
-                  Todas as Notas
-                </button>
-                <p className="opacity-80">Garantia Estendida</p>
-                <p className="opacity-80">Garantia de Fabrica</p>
-              </div>
             </div>
 
             {/* Lixeira */}
