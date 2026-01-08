@@ -5,9 +5,12 @@ interface NoteItemProps {
 }
 
 const NoteItem = ({ note }: NoteItemProps) => {
-  const statusColor =
-    note.status === "Ativa" ? "text-[#478E2C]" : "text-[#D41414]";
-    
+    const statusColor =
+    note.status === "Ativa"
+    ? "text-[#478E2C]"
+    : note.status === "Vencendo"
+    ? "text-[#CA8A04]"
+    : "text-[#D41414]";
 
   return (
     <div className="bg-[#724EBF]/30 rounded-xl p-4 shadow text-left transition-transform duration-150 hover:scale-105 md:hover:scale-105">
