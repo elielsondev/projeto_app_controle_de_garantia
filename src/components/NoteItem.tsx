@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { type Nota } from "../data";
 
 interface NoteItemProps {
@@ -5,11 +6,16 @@ interface NoteItemProps {
 }
 
 const NoteItem = ({ note }: NoteItemProps) => {
+  const navigate = useNavigate(); 
   const statusColor =
     note.status === "Em garantia" ? "text-[#478E2C]" : "text-[#D41414]";
 
+  const handleClick = () => {
+      navigate("/note", { state: { note } });
+    }
+
   return (
-    <div className="bg-[#724EBF]/30 rounded-xl p-4 shadow text-left transition-transform duration-150 hover:scale-105 md:hover:scale-105">
+    <div onClick={handleClick} className="bg-[#724EBF]/30 rounded-xl p-4 shadow text-left transition-transform duration-150 hover:scale-105 md:hover:scale-105">
       <div className="pb-2 mb-2">
         <h3 className="font-bold">{note.title}</h3>
         <p className="text-sm indent-2">{note.store}</p>
