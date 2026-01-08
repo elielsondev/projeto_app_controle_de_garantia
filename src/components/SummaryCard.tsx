@@ -31,7 +31,7 @@ const SummaryCard = ({ title, value, status, isActive, onClick }: SummaryCardPro
       className={`
         relative cursor-pointer rounded-2xl sm:rounded-3xl p-2 m-1 sm:p-4 md:p-5
         shadow-md border transition-all duration-300
-        ${isActive ? "border-purple-600 bg-purple-100 scale-95" : "hover:scale-98"}
+        ${isActive ? "border-purple-600 scale-95" : "hover:scale-98"}
       `}
     >
       <p className={`text-lg sm:text-xl md:text-2xl font-bold ${valueColors[status]}`}>
