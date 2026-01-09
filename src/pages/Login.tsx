@@ -27,14 +27,16 @@ function Login() {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("rememberedEmail", email);
         localStorage.setItem("loggedUserEmail", user.email);
+        sessionStorage.removeItem("isLoggedIn");
+        sessionStorage.removeItem("loggedUserEmail");
       } else {
         // Se não marcou "Manter-me conectado", usa sessionStorage (não persiste ao recarregar)
         sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("loggedUserEmail", user.email);
         localStorage.removeItem("isLoggedIn");
         localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("loggedUserEmail");
       }
-      
-      localStorage.setItem("loggedUserEmail", user.email);
 
       // SweetAlert2 para mostrar mensagem de sucesso
       Swal.fire({

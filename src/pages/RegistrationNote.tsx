@@ -125,10 +125,25 @@ function RegistrationNote() {
       return;
     }
 
-    const loggedUserEmail = localStorage.getItem("loggedUserEmail") || sessionStorage.getItem("loggedUserEmail") || "Usuário";
+    // Buscar email do usuário logado
+    const loggedUserEmail = localStorage.getItem("loggedUserEmail") || sessionStorage.getItem("loggedUserEmail");
+    
+    if (!loggedUserEmail) {
+      Swal.fire({
+        title: "Erro!",
+        text: "Usuário não identificado. Por favor, faça login novamente.",
+        icon: "error",
+        confirmButtonText: "OK",
+      }).then(() => {
+        navigate("/login");
+      });
+      return;
+    }
+
+    // Buscar dados do usuário
     const users = JSON.parse(localStorage.getItem("users") || "[]");
     const user = users.find((u: { email: string; userName: string }) => u.email === loggedUserEmail);
-    const createdBy = user?.userName || loggedUserEmail;
+    const createdBy = user?.userName || loggedUserEmail || "Usuário";
 
     const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
     const allNotas = [...notas, ...savedNotas];
