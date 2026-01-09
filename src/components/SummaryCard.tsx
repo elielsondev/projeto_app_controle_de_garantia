@@ -1,20 +1,17 @@
 import { type ResumoItem } from "../data";
-import activeIcon from "../assets/activeIcon.png";
-import attentionIcon from "../assets/attentionIcon.png";
-import documentIcon from "../assets/documentIcon.png";
-import expiringIcon from "../assets/expiringIcon.png";
+import { FileText, Clock, CheckCircle, XCircle } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
 interface SummaryCardProps extends ResumoItem {
   isActive: boolean;
   onClick: (status: ResumoItem["status"]) => void;
 }
 
-
-const statusIcons: Record<ResumoItem["status"], string> = {
-  total: documentIcon,
-  expiring: expiringIcon,
-  active: activeIcon,
-  expired: attentionIcon,
+const statusIcons: Record<ResumoItem["status"], LucideIcon> = {
+  total: FileText,
+  expiring: Clock,
+  active: CheckCircle,
+  expired: XCircle,
 };
 
 const valueColors: Record<ResumoItem["status"], string> = {
@@ -40,7 +37,10 @@ const SummaryCard = ({ title, value, status, isActive, onClick }: SummaryCardPro
       <p className="text-xs sm:text-sm">{title}</p>
 
       <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-75">
-        <img src={statusIcons[status]} alt={title} className="w-7 h-7 object-contain" />
+        {(() => {
+          const Icon = statusIcons[status];
+          return <Icon className="w-7 h-7" />;
+        })()}
       </span>
     </div>
   );
