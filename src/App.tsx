@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import NoteScreen from "./pages/NoteScreen";
+import RegistrationNote from "./pages/RegistrationNote";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/home" element={ <Home /> } />
         <Route path="/register" element={ <Register /> } />
         <Route path="/note" element={ <NoteScreen /> } />
+        <Route path="/registration-note" element={ <RegistrationNote /> } />
       </Routes>
     </div>
   );

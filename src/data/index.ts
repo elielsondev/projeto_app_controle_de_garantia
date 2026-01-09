@@ -15,6 +15,9 @@ export interface Nota {
     value: number;
     status: "Ativa" | "Vencida" | "Vencendo";
     createdAt: string;
+    numeroNota: string;
+    phone?: string;
+    observations?: string;
 }
 
 export const notas: Nota[] = [
@@ -29,6 +32,7 @@ export const notas: Nota[] = [
         value: 1000,
         status: "Ativa",
         createdAt: "01/01/2025",
+        numeroNota: "001",
     },
     {
         id: 2,
@@ -41,6 +45,7 @@ export const notas: Nota[] = [
         value: 1000,
         status: "Vencida",
         createdAt: "15/01/2025",
+        numeroNota: "002",
     },
     {
         id: 3,
@@ -53,6 +58,7 @@ export const notas: Nota[] = [
         value: 1000,
         status: "Vencendo",
         createdAt: "20/01/2025",
+        numeroNota: "003",
     },
     {
         id: 4,
@@ -65,6 +71,7 @@ export const notas: Nota[] = [
         value: 8000,
         status: "Ativa",
         createdAt: "25/01/2025",
+        numeroNota: "004",
     }
 ];
 

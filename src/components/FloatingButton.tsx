@@ -1,8 +1,17 @@
 import { Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const FloatingButton = () => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate('/registration-note');
+  };
+
   return (
-    <button className="
+    <button 
+      onClick={handleClick}
+      className="
         fixed bottom-5 translate-x-1/2
         right-10 sm:right-10 sm:translate-x-0
         w-14 h-14 rounded-full

@@ -19,6 +19,7 @@ const Home = () => {
     sortBy: "",
     sortOrder: "asc",
   });
+  const [allNotas, setAllNotas] = useState<Nota[]>(notas);
 
   useEffect(() => {
     const isLoggedInLocal = localStorage.getItem("isLoggedIn");
@@ -27,6 +28,14 @@ const Home = () => {
     if (isLoggedInLocal !== "true" && isLoggedInSession !== "true") {
       navigate("/login");
     }
+
+    // Carregar notas do localStorage
+    const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
+    // Carregar lista de notas fixas deletadas
+    const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
+    // Filtrar notas fixas que não foram deletadas
+    const activeFixedNotas = notas.filter((n: Nota) => !deletedNotes.includes(n.id));
+    setAllNotas([...activeFixedNotas, ...savedNotas]);
   }, [navigate]);
 
   // Função para converter data DD/MM/YYYY para Date
@@ -36,7 +45,7 @@ const Home = () => {
   };
 
   const filteredAndSortedNotas = useMemo(() => {
-    let filtered = notas.filter((note: Nota) => {
+    let filtered = allNotas.filter((note: Nota) => {
       // Filtro por status do card (mantém compatibilidade)
       if (activeFilter === "active" && note.status !== "Ativa") return false;
       if (activeFilter === "expired" && note.status !== "Vencida") return false;
@@ -77,19 +86,19 @@ const Home = () => {
     }
 
     return filtered;
-  }, [notas, activeFilter, filterState]);
+  }, [allNotas, activeFilter, filterState]);
 
-  const totalCount = notas.length;
+  const totalCount = allNotas.length;
 
-  const activeCount = notas.filter(
+  const activeCount = allNotas.filter(
     note => note.status === "Ativa"
   ).length;
 
-  const expiredCount = notas.filter(
+  const expiredCount = allNotas.filter(
     note => note.status === "Vencida"
   ).length;
 
-  const expiringCount = notas.filter(
+  const expiringCount = allNotas.filter(
     note => note.status === "Vencendo"
   ).length;
 
@@ -118,11 +127,24 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 px-9">
-        {filteredAndSortedNotas.map((note) => (
-          <NoteItem key={note.id} note={note} />
-        ))}
-      </div>
+      {filteredAndSortedNotas.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 px-4">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+            Nenhuma nota encontrada
+          </h2>
+          <p className="text-gray-500 text-center max-w-md">
+            {allNotas.length === 0
+              ? "Você ainda não possui notas cadastradas. Clique no botão + para criar sua primeira nota!"
+              : "Nenhuma nota corresponde aos filtros aplicados. Tente ajustar os filtros ou limpar a busca."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 px-9">
+          {filteredAndSortedNotas.map((note) => (
+            <NoteItem key={note.id} note={note} />
+          ))}
+        </div>
+      )}
 
       <FloatingButton />
     </div>
