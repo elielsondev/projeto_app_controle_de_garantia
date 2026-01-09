@@ -1,4 +1,5 @@
-import plusIcon from '../assets/plusIcon.png';
+import { Plus } from 'lucide-react';
+
 const FloatingButton = () => {
   return (
     <button className="
@@ -9,7 +10,7 @@ const FloatingButton = () => {
         flex items-center justify-center
         transition-transform duration-300
         md:hover:-translate-y-1 md:hover:shadow-xl">
-      <img src={plusIcon} alt="Adicionar" title='Adicionar Nota' className="w-8 h-8 object-contain" />
+      <Plus className="w-8 h-8" />
     </button>
   );
 };
