@@ -26,7 +26,9 @@ const NoteItem = ({ note }: NoteItemProps) => {
       </div>
 
       <p className="indent-0.5 text-sm"><span className="font-semibold">Compra:</span> {note.purchaseDate}</p>
+      <p className="indent-0.5 text-sm"><span className="font-semibold">Data de Vencimento:</span>{note.dueDate}</p>
       <p className="indent-0.5 text-sm mt-0.5"><span className="font-semibold">Tipo:</span> {note.typeNote}</p>
+      <p className="indent-0.5 text-sm mt-0.5"><span className="font-semibold">Criado por:</span> {note.createdBy}</p>
 
       <div className="border-t flex justify-between items-center mt-4 pt-1.5">
         <span className="font-bold text-lg">
