@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { CircleCheckBig, FileText, CalendarDays, ClockAlert, Store, Phone, ShieldCheck, CircleArrowLeft, User, } from "lucide-react"
+import { CircleCheckBig, FileText, CalendarDays, ClockAlert, Store, Phone, ShieldCheck, CircleArrowLeft, User, DollarSign } from "lucide-react"
 import Header from "../components/Header";
 import { type Nota } from "../data";
 import Swal from "sweetalert2";
@@ -48,6 +48,32 @@ function NoteScreen() {
   const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
   const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
   const pdfData = isInTrash ? trashPdfs[note.id] : pdfs[note.id];
+
+  // Função para formatar telefone brasileiro
+  const formatPhone = (phone: string): string => {
+    if (!phone) return "";
+    // Remove tudo que não é número
+    const numbers = phone.replace(/\D/g, "");
+    
+    // Formata conforme o tamanho
+    if (numbers.length === 10) {
+      // Telefone fixo: (XX) XXXX-XXXX
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    } else if (numbers.length === 11) {
+      // Celular: (XX) XXXXX-XXXX
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+    }
+    // Se não tiver 10 ou 11 dígitos, retorna o original
+    return phone;
+  };
+
+  // Função para formatar valor monetário brasileiro
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
 
   const handleViewPdf = () => {
     if (pdfData && pdfData.data) {
@@ -277,10 +303,18 @@ function NoteScreen() {
                   <Phone color="#724EBF" size={35} className="shrink-0" />
                   <div className="flex flex-col">
                     <p className="font-semibold text-sm md:text-base">Contato da Loja:</p>
-                    <p className="text-sm md:text-base">{note.phone}</p>
+                    <p className="text-sm md:text-base">{formatPhone(note.phone)}</p>
                   </div>
                 </div>
               )}
+
+              <div className="flex flex-row items-start gap-2">
+                <DollarSign color="#724EBF" size={35} className="shrink-0" />
+                <div className="flex flex-col">
+                  <p className="font-semibold text-sm md:text-base">Valor:</p>
+                  <p className="text-sm md:text-base">{formatCurrency(note.value)}</p>
+                </div>
+              </div>
 
               <div className="flex flex-row items-start gap-2">
                 <ShieldCheck color="#724EBF" size={35} className="shrink-0" />

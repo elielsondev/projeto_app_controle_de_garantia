@@ -27,6 +27,15 @@ function RegistrationNote() {
   const [pdfFileName, setPdfFileName] = useState("");
   const [hasExistingPdf, setHasExistingPdf] = useState(false);
 
+  // Função para formatar valor ao carregar
+  const formatValueForInput = (value: number): string => {
+    if (!value) return "";
+    return new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   // Carregar dados da nota se estiver editando
   useEffect(() => {
     if (noteToEdit) {
@@ -45,7 +54,7 @@ function RegistrationNote() {
         phone: noteToEdit.phone || "",
         observations: noteToEdit.observations || "",
         typeNote: noteToEdit.typeNote || "",
-        value: noteToEdit.value ? noteToEdit.value.toString().replace(".", ",") : "",
+        value: formatValueForInput(noteToEdit.value),
       });
 
       // Verificar se há PDF existente
@@ -57,14 +66,67 @@ function RegistrationNote() {
     }
   }, [noteToEdit]);
 
+  // Função para formatar telefone durante a digitação
+  const formatPhoneInput = (value: string): string => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, "");
+    
+    // Limita a 11 dígitos (celular)
+    const limitedNumbers = numbers.slice(0, 11);
+    
+    // Formata conforme o tamanho
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers ? `(${limitedNumbers}` : "";
+    } else if (limitedNumbers.length <= 6) {
+      return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`;
+    } else if (limitedNumbers.length <= 10) {
+      // Telefone fixo: (XX) XXXX-XXXX
+      return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`;
+    } else {
+      // Celular: (XX) XXXXX-XXXX
+      return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7, 11)}`;
+    }
+  };
+
+  // Função para formatar valor monetário durante a digitação
+  const formatCurrencyInput = (value: string): string => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, "");
+    
+    if (!numbers) return "";
+    
+    // Converte para número e divide por 100 para ter centavos
+    const amount = parseFloat(numbers) / 100;
+    
+    // Formata como moeda brasileira
+    return new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    // Aplicar formatação específica para telefone e valor
+    if (name === "phone") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formatPhoneInput(value),
+      }));
+    } else if (name === "value") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formatCurrencyInput(value),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +177,7 @@ function RegistrationNote() {
     e.preventDefault();
 
     // Validação dos campos obrigatórios
-    if (!formData.numeroNota || !formData.title || !formData.store || !formData.purchaseDate || !formData.dueDate || !formData.typeNote) {
+    if (!formData.numeroNota || !formData.title || !formData.store || !formData.purchaseDate || !formData.dueDate || !formData.typeNote || !formData.value) {
       Swal.fire({
         title: "Campos obrigatórios!",
         text: "Por favor, preencha todos os campos marcados com *",
@@ -162,7 +224,7 @@ function RegistrationNote() {
         dueDate: formatDate(formData.dueDate),
         typeNote: formData.typeNote,
         createdBy: createdBy, // Atualiza com o usuário atual que está editando
-        value: formData.value ? parseFloat(formData.value.replace(",", ".")) : 0,
+        value: formData.value ? parseFloat(formData.value.replace(/\./g, "").replace(",", ".")) : 0,
         status: calculateStatus(formatDate(formData.dueDate)),
         phone: formData.phone || undefined,
         observations: formData.observations || undefined,
@@ -193,7 +255,7 @@ function RegistrationNote() {
         dueDate: formatDate(formData.dueDate),
         typeNote: formData.typeNote,
         createdBy: createdBy,
-        value: formData.value ? parseFloat(formData.value.replace(",", ".")) : 0,
+        value: formData.value ? parseFloat(formData.value.replace(/\./g, "").replace(",", ".")) : 0,
         status: calculateStatus(formatDate(formData.dueDate)),
         createdAt: getCurrentDateFormatted(),
         phone: formData.phone || undefined,
@@ -466,15 +528,16 @@ function RegistrationNote() {
           {/* Valor */}
           <div>
             <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-              Valor (R$)
+              Valor (R$) <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="value"
               value={formData.value}
               onChange={handleInputChange}
-              placeholder="Ex: 1000,00"
+              placeholder="Ex: 1.000,00"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
             />
           </div>
 
