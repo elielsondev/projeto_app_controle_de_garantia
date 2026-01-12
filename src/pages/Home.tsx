@@ -20,6 +20,7 @@ const Home = () => {
     sortOrder: "asc",
   });
   const [allNotas, setAllNotas] = useState<Nota[]>(notas);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const isLoggedInLocal = localStorage.getItem("isLoggedIn");
@@ -46,6 +47,17 @@ const Home = () => {
 
   const filteredAndSortedNotas = useMemo(() => {
     let filtered = allNotas.filter((note: Nota) => {
+      // Filtro de busca por nome ou número da nota
+      if (searchTerm.trim()) {
+        const searchLower = searchTerm.toLowerCase().trim();
+        const titleMatch = note.title.toLowerCase().includes(searchLower);
+        const numeroMatch = note.numeroNota.toLowerCase().includes(searchLower);
+        
+        if (!titleMatch && !numeroMatch) {
+          return false;
+        }
+      }
+
       // Filtro por status do card (mantém compatibilidade)
       if (activeFilter === "active" && note.status !== "Ativa") return false;
       if (activeFilter === "expired" && note.status !== "Vencida") return false;
@@ -86,7 +98,7 @@ const Home = () => {
     }
 
     return filtered;
-  }, [allNotas, activeFilter, filterState]);
+  }, [allNotas, activeFilter, filterState, searchTerm]);
 
   const totalCount = allNotas.length;
 
@@ -112,7 +124,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
-      <SearchBar onFilterChange={setFilterState} />
+      <SearchBar onFilterChange={setFilterState} onSearchChange={setSearchTerm} />
 
       <div className="w-full px-5 sm:px-15 mt-1 mb-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-7">

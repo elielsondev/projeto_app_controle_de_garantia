@@ -35,7 +35,10 @@ const TrashNoteItem = ({ note, isSelected, onSelect }: TrashNoteItemProps) => {
           >
                <div className="pb-2">
                     <h3 className="font-bold">{note.title}</h3>
-                    <p className="text-sm indent-2">{note.store}</p>
+                    <div className="flex justify-between items-center text-sm indent-2">
+                         <p>{note.store}</p>
+                         <p className="font-semibold text-gray-600">Nota: {note.numeroNota}</p>
+                    </div>
                </div>
 
                <p className="indent-0.5 text-sm"><span className="font-semibold">Compra:</span> {note.purchaseDate}</p>

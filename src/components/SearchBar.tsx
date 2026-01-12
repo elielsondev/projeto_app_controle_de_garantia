@@ -4,10 +4,20 @@ import FilterModal, { type FilterState } from "./FilterModal";
 
 interface SearchBarProps {
   onFilterChange?: (filters: FilterState) => void;
+  onSearchChange?: (searchTerm: string) => void;
 }
 
-const SearchBar = ({ onFilterChange }: SearchBarProps) => {
+const SearchBar = ({ onFilterChange, onSearchChange }: SearchBarProps) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
+  };
 
   const handleFilterApply = (filters: FilterState) => {
     if (onFilterChange) {
@@ -29,8 +39,10 @@ const SearchBar = ({ onFilterChange }: SearchBarProps) => {
 
           <input
             type="text"
-            placeholder="Pesquisar Notas"
-            className="flex-1 outline-none text-sm"
+            placeholder="Pesquisar por nome ou número da nota"
+            className="flex-1 outline-none text-sm bg-transparent"
+            value={searchTerm}
+            onChange={handleSearchChange}
           />
 
           <button
