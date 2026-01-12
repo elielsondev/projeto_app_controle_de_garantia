@@ -24,7 +24,7 @@ const NoteItem = ({ note }: NoteItemProps) => {
         <h3 className="font-bold">{note.title}</h3>
         <div className="flex justify-between items-center text-sm indent-2">
           <p>{note.store}</p>
-          <p className="font-semibold text-gray-600">Nota: {note.numeroNota}</p>
+          <p className="font-semibold text-gray-600">N° da nota: {note.numeroNota}</p>
         </div>
       </div>
 
