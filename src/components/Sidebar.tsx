@@ -60,16 +60,28 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Conteúdo */}
         <div className="flex flex-col h-[calc(100%-4rem)]">
           <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
-            {/* Minhas Notas */}
-            <div>
-              <button className="flex items-center gap-2 font-medium">
-                <FileText size={18} />
-                Minhas Notas
-              </button>
-            </div>
+            
+            {/* Minhas Notas - Volta para a Home */}
+              <div>
+              <button 
+             onClick={() => {
+             navigate("/home");
+             onClose();
+       }}
+        className="flex items-center gap-2 font-medium w-full text-left hover:text-purple-200 transition-colors"
+  >
+         <FileText size={18} />
+         Minhas Notas
+        </button>
+          </div>
 
             {/* Lixeira */}
-            <button className="flex items-center gap-2">
+            <button 
+            onClick={()=> {
+              navigate("/trash")
+              onClose();
+            }}
+            className="flex items-center gap-2 hover:text-purple-200 transition-colors">
               <Trash2 size={18} />
               Lixeira
             </button>

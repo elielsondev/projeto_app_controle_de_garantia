@@ -1,10 +1,496 @@
-// import React from 'react'
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Upload, X, CircleArrowLeft } from "lucide-react";
+import Header from "../components/Header";
+import Swal from "sweetalert2";
+import { notas } from "../data";
+import type { Nota } from "../data";
 
-// Componente de registro de nota
 function RegistrationNote() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const noteToEdit = location.state?.note as Nota | undefined;
+  const isEditMode = !!noteToEdit;
+
+  const [formData, setFormData] = useState({
+    numeroNota: "",
+    title: "",
+    store: "",
+    purchaseDate: "",
+    dueDate: "",
+    phone: "",
+    observations: "",
+    typeNote: "",
+    value: "",
+  });
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFileName, setPdfFileName] = useState("");
+  const [hasExistingPdf, setHasExistingPdf] = useState(false);
+
+  // Carregar dados da nota se estiver editando
+  useEffect(() => {
+    if (noteToEdit) {
+      // Converter datas de DD/MM/YYYY para YYYY-MM-DD
+      const convertDateToInput = (dateStr: string): string => {
+        const [day, month, year] = dateStr.split("/");
+        return `${year}-${month}-${day}`;
+      };
+
+      setFormData({
+        numeroNota: noteToEdit.numeroNota || "",
+        title: noteToEdit.title || "",
+        store: noteToEdit.store || "",
+        purchaseDate: noteToEdit.purchaseDate ? convertDateToInput(noteToEdit.purchaseDate) : "",
+        dueDate: noteToEdit.dueDate ? convertDateToInput(noteToEdit.dueDate) : "",
+        phone: noteToEdit.phone || "",
+        observations: noteToEdit.observations || "",
+        typeNote: noteToEdit.typeNote || "",
+        value: noteToEdit.value ? noteToEdit.value.toString().replace(".", ",") : "",
+      });
+
+      // Verificar se há PDF existente
+      const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
+      if (pdfs[noteToEdit.id]) {
+        setHasExistingPdf(true);
+        setPdfFileName(pdfs[noteToEdit.id].fileName || "PDF anexado");
+      }
+    }
+  }, [noteToEdit]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type === "application/pdf") {
+        setPdfFile(file);
+        setPdfFileName(file.name);
+      } else {
+        Swal.fire({
+          title: "Erro!",
+          text: "Por favor, selecione apenas arquivos PDF",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    // Converte de YYYY-MM-DD para DD/MM/YYYY
+    const [year, month, day] = dateString.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  const getCurrentDateFormatted = (): string => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, "0");
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const year = today.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const calculateStatus = (dueDate: string): "Ativa" | "Vencida" | "Vencendo" => {
+    const [day, month, year] = dueDate.split("/").map(Number);
+    const due = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const daysUntilDue = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilDue < 0) return "Vencida";
+    if (daysUntilDue <= 30) return "Vencendo";
+    return "Ativa";
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validação dos campos obrigatórios
+    if (!formData.numeroNota || !formData.title || !formData.store || !formData.purchaseDate || !formData.dueDate || !formData.typeNote) {
+      Swal.fire({
+        title: "Campos obrigatórios!",
+        text: "Por favor, preencha todos os campos marcados com *",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    const loggedUserEmail = localStorage.getItem("loggedUserEmail") || sessionStorage.getItem("loggedUserEmail") || "Usuário";
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = users.find((u: { email: string; userName: string }) => u.email === loggedUserEmail);
+    const createdBy = user?.userName || loggedUserEmail;
+
+    const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
+    const allNotas = [...notas, ...savedNotas];
+
+    let updatedNote: Nota;
+
+    if (isEditMode && noteToEdit) {
+      // Modo de edição - atualizar nota existente
+      // Atualiza o createdBy com o nome da última pessoa que editou
+      updatedNote = {
+        ...noteToEdit,
+        numeroNota: formData.numeroNota,
+        title: formData.title,
+        store: formData.store,
+        purchaseDate: formatDate(formData.purchaseDate),
+        dueDate: formatDate(formData.dueDate),
+        typeNote: formData.typeNote,
+        createdBy: createdBy, // Atualiza com o usuário atual que está editando
+        value: formData.value ? parseFloat(formData.value.replace(",", ".")) : 0,
+        status: calculateStatus(formatDate(formData.dueDate)),
+        phone: formData.phone || undefined,
+        observations: formData.observations || undefined,
+      };
+
+      // Atualizar no array de notas salvas
+      const noteIndex = savedNotas.findIndex((n: Nota) => n.id === noteToEdit.id);
+      if (noteIndex !== -1) {
+        savedNotas[noteIndex] = updatedNote;
+      } else {
+        // Se não estiver nas salvas, pode estar nas notas padrão (não editável)
+        // Nesse caso, adiciona nas salvas
+        savedNotas.push(updatedNote);
+      }
+      localStorage.setItem("notas", JSON.stringify(savedNotas));
+    } else {
+      // Modo de criação - criar nova nota
+      const maxId = allNotas.length > 0 
+        ? Math.max(...allNotas.map((n: Nota) => n.id))
+        : 0;
+
+      updatedNote = {
+        id: maxId + 1,
+        numeroNota: formData.numeroNota,
+        title: formData.title,
+        store: formData.store,
+        purchaseDate: formatDate(formData.purchaseDate),
+        dueDate: formatDate(formData.dueDate),
+        typeNote: formData.typeNote,
+        createdBy: createdBy,
+        value: formData.value ? parseFloat(formData.value.replace(",", ".")) : 0,
+        status: calculateStatus(formatDate(formData.dueDate)),
+        createdAt: getCurrentDateFormatted(),
+        phone: formData.phone || undefined,
+        observations: formData.observations || undefined,
+      };
+
+      savedNotas.push(updatedNote);
+      localStorage.setItem("notas", JSON.stringify(savedNotas));
+    }
+
+    // Gerenciar PDFs
+    const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
+    
+    if (pdfFile) {
+      // Se houver PDF novo, converter para base64 e salvar
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        pdfs[updatedNote.id] = {
+          fileName: pdfFileName,
+          data: base64String,
+        };
+        localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+
+        Swal.fire({
+          title: "Sucesso!",
+          text: isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          navigate("/home");
+        });
+      };
+      reader.onerror = () => {
+        Swal.fire({
+          title: "Erro!",
+          text: "Erro ao processar o PDF",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      };
+      reader.readAsDataURL(pdfFile);
+    } else {
+      // Se estiver editando e não houver PDF novo
+      if (isEditMode && noteToEdit) {
+        // Se o usuário removeu o PDF existente, remover do localStorage
+        if (!hasExistingPdf && pdfs[noteToEdit.id]) {
+          delete pdfs[noteToEdit.id];
+          localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+        }
+        // Se ainda há PDF existente e não foi removido, mantém no localStorage (não faz nada)
+      }
+
+      Swal.fire({
+        title: "Sucesso!",
+        text: isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then(() => {
+        navigate("/home");
+      });
+    }
+  };
+
+  const handleGoBack = () => {
+    navigate("/home");
+  };
+
   return (
-    <div>RegistrationNote</div>
-  )
+    <div className="min-h-screen bg-gray-100">
+      <Header />
+      
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Título e Botão de Voltar - Alinhados Horizontalmente */}
+        <div className="relative flex items-center justify-center mb-6">
+          {/* Botão de Voltar - Apenas Mobile */}
+          <button
+            onClick={handleGoBack}
+            className="md:hidden absolute left-0 flex items-center gap-2 text-[#724EBF] hover:text-[#5a3a9f] transition"
+          >
+            <CircleArrowLeft className="w-6 h-6" />
+            <span className="font-medium">Voltar</span>
+          </button>
+          
+          <h1 className="text-2xl font-bold text-[#724EBF]">
+            {isEditMode ? "Editar Nota" : "Cadastrar Nova Nota"}
+          </h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+          {/* Upload de PDF */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Upload de Nota Fiscal (PDF)
+            </label>
+            {!pdfFile && !hasExistingPdf ? (
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                  <p className="mb-2 text-sm text-gray-500">
+                    <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
+                  </p>
+                  <p className="text-xs text-gray-500">PDF (MAX. 10MB)</p>
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
+                    <span className="text-red-600 font-bold text-sm">PDF</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">{pdfFileName}</p>
+                    {pdfFile && (
+                      <p className="text-xs text-gray-500">
+                        {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    )}
+                    {hasExistingPdf && !pdfFile && (
+                      <p className="text-xs text-gray-500">PDF existente</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasExistingPdf && !pdfFile && (
+                    <label className="p-2 text-[#724EBF] hover:text-[#5a3a9f] transition cursor-pointer">
+                      <Upload className="w-5 h-5" />
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPdfFile(null);
+                      setPdfFileName("");
+                      setHasExistingPdf(false);
+                    }}
+                    className="p-2 text-gray-400 hover:text-red-600 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Número da Nota */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Número da Nota <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="numeroNota"
+              value={formData.numeroNota}
+              onChange={handleInputChange}
+              placeholder="Ex: 12345"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
+            />
+          </div>
+
+          {/* Nome do Produto */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Nome do Produto <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              placeholder="Ex: Notebook Gamer"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
+            />
+          </div>
+
+          {/* Loja */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Loja <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="store"
+              value={formData.store}
+              onChange={handleInputChange}
+              placeholder="Ex: Magazine Luiza"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
+            />
+          </div>
+
+          {/* Data de Compra */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Data de Compra <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="purchaseDate"
+              value={formData.purchaseDate}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
+            />
+          </div>
+
+          {/* Fim da Garantia */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Fim da Garantia <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="dueDate"
+              value={formData.dueDate}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
+            />
+          </div>
+
+          {/* Telefone da Loja */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Telefone da Loja
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="Ex: (11) 99999-9999"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+            />
+          </div>
+
+          {/* Tipo de Garantia */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Tipo de Garantia <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="typeNote"
+              value={formData.typeNote}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+              required
+            >
+              <option value="">Selecione o tipo de garantia</option>
+              <option value="Garantia Legal">Garantia Legal</option>
+              <option value="Garantia Contratual">Garantia Contratual</option>
+              <option value="Garantia Estendida">Garantia Estendida</option>
+            </select>
+          </div>
+
+          {/* Valor */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Valor (R$)
+            </label>
+            <input
+              type="text"
+              name="value"
+              value={formData.value}
+              onChange={handleInputChange}
+              placeholder="Ex: 1000,00"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+            />
+          </div>
+
+          {/* Observações */}
+          <div>
+            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+              Observações
+            </label>
+            <textarea
+              name="observations"
+              value={formData.observations}
+              onChange={handleInputChange}
+              rows={4}
+              placeholder="Adicione observações sobre a nota..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none resize-none"
+            />
+          </div>
+
+          {/* Botão de Salvar */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              className="w-full py-3 bg-[#724EBF] text-white font-semibold rounded-lg hover:bg-[#5a3a9f] transition-colors shadow-md"
+            >
+              {isEditMode ? "Salvar Alterações" : "Cadastrar Nova Nota"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 export default RegistrationNote;
