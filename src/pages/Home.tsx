@@ -61,6 +61,11 @@ const Home = () => {
         return false;
       }
 
+      // Filtro por título
+      if (filterState.title && !note.title.toLowerCase().includes(filterState.title.toLowerCase())) {
+        return false;
+      }
+
       return true;
     });
 
@@ -112,7 +117,11 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
-      <SearchBar onFilterChange={setFilterState} />
+      <SearchBar
+  filterState={filterState}
+  onFilterChange={setFilterState}
+/>
+
 
       <div className="w-full px-5 sm:px-15 mt-1 mb-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-7">

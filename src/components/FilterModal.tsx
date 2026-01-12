@@ -11,6 +11,7 @@ export interface FilterState {
      typeNote: string[];
      sortBy: "createdDate" | "purchaseDate" | "value" | "";
      sortOrder: "asc" | "desc";
+     title?: string;
 }
 
 const FilterModal = ({ isOpen, onClose, onApplyFilters }: FilterModalProps) => {

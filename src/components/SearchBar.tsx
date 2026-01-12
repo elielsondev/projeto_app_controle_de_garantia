@@ -3,16 +3,29 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import FilterModal, { type FilterState } from "./FilterModal";
 
 interface SearchBarProps {
-  onFilterChange?: (filters: FilterState) => void;
+  filterState: FilterState;
+  onFilterChange: (filters: FilterState) => void;
 }
 
-const SearchBar = ({ onFilterChange }: SearchBarProps) => {
+const SearchBar = ({ filterState, onFilterChange }: SearchBarProps) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchText, setSearchText] = useState(filterState.title || "");
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchText(value);
+
+    onFilterChange({
+      ...filterState,
+      title: value,
+    });
+  };
 
   const handleFilterApply = (filters: FilterState) => {
-    if (onFilterChange) {
-      onFilterChange(filters);
-    }
+    onFilterChange({
+      ...filters,
+      title: searchText,
+    });
     setIsFilterOpen(false);
   };
 
@@ -20,17 +33,14 @@ const SearchBar = ({ onFilterChange }: SearchBarProps) => {
     <>
       <div className="flex justify-center items-center">
         <div className="flex items-center bg-gray-50 rounded-xl shadow w-full gap-3 h-9 m-5 p-6">
-          <button
-            className="p-2 rounded-lg hover:bg-gray-100 transition bg-transparent"
-            aria-label="busca"
-          >
-            <Search className="w-6 h-6 text-gray-600" />
-          </button>
+          <Search className="w-6 h-6 text-gray-600" />
 
           <input
             type="text"
-            placeholder="Pesquisar Notas"
-            className="flex-1 outline-none text-sm"
+            placeholder="Pesquisar por nome do produto"
+            value={searchText}
+            onChange={handleSearchChange}
+            className="flex-1 outline-none text-sm bg-transparent"
           />
 
           <button
