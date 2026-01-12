@@ -16,6 +16,31 @@ function NoteScreen() {
     return null;
   }
 
+  // Função para verificar se a nota está na lixeira - sempre verifica diretamente
+  const isInTrash = (): boolean => {
+    if (!note || !note.id) return false;
+    
+    try {
+      const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
+      if (!Array.isArray(trashNotes) || trashNotes.length === 0) {
+        return false;
+      }
+      
+      // Verificar se existe alguma nota na lixeira com o mesmo ID
+      // Comparação rigorosa: verifica ID exato
+      const found = trashNotes.some((n: Nota) => {
+        if (!n || typeof n.id !== 'number') return false;
+        // Comparar apenas o ID (número)
+        return n.id === note.id;
+      });
+      
+      return found;
+    } catch (error) {
+      // Em caso de erro, assume que não está na lixeira
+      return false;
+    }
+  };
+
   const handleClick = () => {
     navigate("/home");
   };
@@ -40,14 +65,10 @@ function NoteScreen() {
   const loggedUser = users.find((u: { email: string; userName: string }) => u.email === loggedUserEmail);
   const loggedUserName = loggedUser?.userName || note.createdBy;
 
-  // Verificar se a nota está na lixeira
-  const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
-  const isInTrash = trashNotes.some((n: Nota) => n.id === note.id);
-
   // Verificar se há PDF associado (primeiro na lixeira, depois na lista principal)
   const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
   const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
-  const pdfData = isInTrash ? trashPdfs[note.id] : pdfs[note.id];
+  const pdfData = isInTrash() ? trashPdfs[note.id] : pdfs[note.id];
 
   // Função para formatar telefone brasileiro
   const formatPhone = (phone: string): string => {
@@ -365,8 +386,8 @@ function NoteScreen() {
             </button>
 
             <button
-              onClick={isInTrash ? handleRestoreNote : handleDeleteNote}
-              className={isInTrash ? `
+              onClick={isInTrash() ? handleRestoreNote : handleDeleteNote}
+              className={isInTrash() ? `
               border-2 border-[#478E2C]
               text-[#478E2C] font-medium
               px-10
@@ -386,7 +407,7 @@ function NoteScreen() {
               transition
             `}
             >
-              {isInTrash ? "Restaurar Nota" : "Mover para Lixeira"}
+              {isInTrash() ? "Restaurar Nota" : "Mover para Lixeira"}
             </button>
           </div>
         </div>
