@@ -1,5 +1,6 @@
 import { User, LogOut } from "lucide-react";
 import Header from "../components/Header.tsx";
+import ProfilePhoto from "../components/ProfilePhoto";
 
 export default function SettingsPage() {
   return (
@@ -17,15 +18,9 @@ export default function SettingsPage() {
         <div className="bg-white rounded-xl shadow p-6">
           {/* Perfil */}
           <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
-            <div className="w-24 h-24 rounded-full border-2 border-[#724EBF] flex items-center justify-center">
-              <User className="w-12 h-12 text-[#724EBF]" />
-            </div>
-
+            <ProfilePhoto />
             <div className="text-center sm:text-left">
-              <h2 className="text-lg font-semibold">Usuário</h2>
-              <button className="text-sm text-[#724EBF] hover:underline">
-                Mudar foto de perfil
-              </button>
+              <h1 className="text-lg font-semibold">Usuário</h1>
             </div>
           </div>
 
