@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import NoteScreen from "./pages/NoteScreen";
 import RegistrationNote from "./pages/RegistrationNote";
 import Trash from "./pages/trash";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/note" element={ <NoteScreen /> } />
         <Route path="/registration-note" element={ <RegistrationNote /> } />
         <Route path="/trash" element={<Trash />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
   );

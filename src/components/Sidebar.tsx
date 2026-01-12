@@ -87,7 +87,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </button>
 
             {/* Configurações */}
-            <button className="flex items-center gap-2">
+            <button 
+            onClick={()=> {
+              navigate("/Settings")
+              onClose();
+            }}
+            className="flex items-center gap-2 hover:text-purple-200 transition-colors">
               <Settings size={18} />
               Configurações
             </button>
