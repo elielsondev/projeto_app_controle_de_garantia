@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { CircleCheckBig, FileText, CalendarDays, ClockAlert, Store, Phone, ShieldCheck, CircleArrowLeft, User,} from "lucide-react"
+import { CircleCheckBig, FileText, CalendarDays, ClockAlert, Store, Phone, ShieldCheck, CircleArrowLeft, User, } from "lucide-react"
 import Header from "../components/Header";
 import { type Nota } from "../data";
 import Swal from "sweetalert2";
@@ -40,9 +40,14 @@ function NoteScreen() {
   const loggedUser = users.find((u: { email: string; userName: string }) => u.email === loggedUserEmail);
   const loggedUserName = loggedUser?.userName || note.createdBy;
 
-  // Verificar se há PDF associado
+  // Verificar se a nota está na lixeira
+  const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
+  const isInTrash = trashNotes.some((n: Nota) => n.id === note.id);
+
+  // Verificar se há PDF associado (primeiro na lixeira, depois na lista principal)
+  const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
   const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
-  const pdfData = pdfs[note.id];
+  const pdfData = isInTrash ? trashPdfs[note.id] : pdfs[note.id];
 
   const handleViewPdf = () => {
     if (pdfData && pdfData.data) {
@@ -54,11 +59,11 @@ function NoteScreen() {
       }
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'application/pdf' });
-      
+
       // Criar URL do blob e abrir em nova aba
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      
+
       // Limpar a URL após um tempo para liberar memória
       setTimeout(() => URL.revokeObjectURL(url), 100);
     }
@@ -66,20 +71,35 @@ function NoteScreen() {
 
   const handleDeleteNote = () => {
     Swal.fire({
-      title: "Tem certeza?",
-      text: "Esta ação não pode ser desfeita! A nota será permanentemente deletada.",
+      title: "Mover para Lixeira?",
+      text: "A nota será movida para a lixeira e poderá ser restaurada depois.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#D41414",
       cancelButtonColor: "#6c757d",
-      confirmButtonText: "Sim, deletar",
+      confirmButtonText: "Sim, mover para lixeira",
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
+        // Salvar a nota na lixeira (trashNotes)
+        const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
+        // Verificar se a nota já não está na lixeira
+        if (!trashNotes.find((n: Nota) => n.id === note.id)) {
+          trashNotes.push(note);
+          localStorage.setItem("trashNotes", JSON.stringify(trashNotes));
+        }
+
+        // Salvar PDF na lixeira também (manter referência)
+        if (pdfData) {
+          const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
+          trashPdfs[note.id] = pdfData;
+          localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
+        }
+
         // Verificar se é uma nota fixa (id <= 4) ou uma nota do localStorage
         const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
         const isFixedNote = note.id <= 4 && !savedNotas.find((n: Nota) => n.id === note.id);
-        
+
         if (isFixedNote) {
           // Se for uma nota fixa, adicionar ao array de deletadas
           const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
@@ -93,7 +113,7 @@ function NoteScreen() {
           localStorage.setItem("notas", JSON.stringify(updatedNotas));
         }
 
-        // Remover PDF associado se existir
+        // Remover PDF da lista principal (mas manter na lixeira)
         if (pdfData) {
           const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
           delete pdfs[note.id];
@@ -101,12 +121,70 @@ function NoteScreen() {
         }
 
         Swal.fire({
-          title: "Deletada!",
-          text: "A nota foi deletada com sucesso.",
+          title: "Movida para Lixeira!",
+          text: "A nota foi movida para a lixeira com sucesso.",
           icon: "success",
           confirmButtonText: "OK",
         }).then(() => {
           navigate("/home");
+        });
+      }
+    });
+  };
+
+  const handleRestoreNote = () => {
+    Swal.fire({
+      title: "Restaurar Nota?",
+      text: "A nota será restaurada e voltará para a lista principal.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#478E2C",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sim, restaurar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Remover da lixeira
+        const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
+        const updatedTrashNotes = trashNotes.filter((n: Nota) => n.id !== note.id);
+        localStorage.setItem("trashNotes", JSON.stringify(updatedTrashNotes));
+
+        // Restaurar PDF se existir na lixeira
+        if (pdfData) {
+          const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
+          pdfs[note.id] = pdfData;
+          localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+
+          // Remover da lixeira de PDFs
+          const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
+          delete trashPdfs[note.id];
+          localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
+        }
+
+        // Verificar se é uma nota fixa (id <= 4) ou uma nota do localStorage
+        const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
+        const isFixedNote = note.id <= 4 && !savedNotas.find((n: Nota) => n.id === note.id);
+
+        if (isFixedNote) {
+          // Se for uma nota fixa, remover do array de deletadas
+          const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
+          const updatedDeletedNotes = deletedNotes.filter((id: number) => id !== note.id);
+          localStorage.setItem("deletedNotes", JSON.stringify(updatedDeletedNotes));
+        } else {
+          // Se for uma nota do localStorage, adicionar de volta
+          if (!savedNotas.find((n: Nota) => n.id === note.id)) {
+            savedNotas.push(note);
+            localStorage.setItem("notas", JSON.stringify(savedNotas));
+          }
+        }
+
+        Swal.fire({
+          title: "Restaurada!",
+          text: "A nota foi restaurada com sucesso.",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          navigate("/trash");
         });
       }
     });
@@ -147,7 +225,7 @@ function NoteScreen() {
             </div>
 
             {pdfData ? (
-              <button 
+              <button
                 onClick={handleViewPdf}
                 className="mt-2 md:mt-3 font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
               >
@@ -235,7 +313,7 @@ function NoteScreen() {
             placeholder="Nenhuma observação registrada."
           />
           <div className="flex flex-col sm:flex-row justify-start sm:justify-end gap-3 md:gap-4 mt-4 md:mt-5">
-            <button 
+            <button
               onClick={() => {
                 navigate("/registration-note", { state: { note } });
               }}
@@ -252,9 +330,18 @@ function NoteScreen() {
               Editar
             </button>
 
-            <button 
-              onClick={handleDeleteNote}
-              className="
+            <button
+              onClick={isInTrash ? handleRestoreNote : handleDeleteNote}
+              className={isInTrash ? `
+              border-2 border-[#478E2C]
+              text-[#478E2C] font-medium
+              px-10
+              py-2
+              rounded-3xl
+              hover:bg-green-200
+              hover:border-green-200
+              transition
+            ` : `
               border-2 border-[#D41414]
               text-[#D41414] font-medium
               px-10
@@ -263,8 +350,9 @@ function NoteScreen() {
               hover:bg-red-200
               hover:border-red-200
               transition
-            ">
-              Mover para Lixeira
+            `}
+            >
+              {isInTrash ? "Restaurar Nota" : "Mover para Lixeira"}
             </button>
           </div>
         </div>
