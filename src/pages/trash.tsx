@@ -220,7 +220,7 @@ const Trash = () => {
                     onClick={handleDeletePermanently}
                     className="px-4 py-2 text-sm font-medium text-[#D41414] bg-white border-2 border-[#D41414] rounded-lg hover:bg-red-50 transition flex items-center gap-2"
                   >
-                    <Trash2 size={16} />
+                    <XCircle size={16} />
                     Excluir ({selectedNotes.size})
                   </button>
                 </>
@@ -230,7 +230,7 @@ const Trash = () => {
                 onClick={handleEmptyTrash}
                 className="px-4 py-2 text-sm font-medium text-[#D41414] bg-white border-2 border-[#D41414] rounded-lg hover:bg-red-50 transition flex items-center gap-2"
               >
-                <XCircle size={16} />
+                <Trash2 size={16} />
                 Esvaziar Lixeira
               </button>
             </div>
