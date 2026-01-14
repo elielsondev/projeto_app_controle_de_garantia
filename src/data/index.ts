@@ -53,7 +53,7 @@ export const notas: Nota[] = [
         store: "Magazine Luiza",
         purchaseDate: "12/02/2025",
         dueDate: "12/02/2026",
-        typeNote: "Garantia Contratual",
+        typeNote: "Garantia de Assistência",
         createdBy: "Paulinho Rodriguês",
         value: 1000,
         status: "Vencendo",

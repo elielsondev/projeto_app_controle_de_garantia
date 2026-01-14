@@ -22,7 +22,7 @@ const FilterModal = ({ isOpen, onClose, onApplyFilters }: FilterModalProps) => {
      });
 
      const statusOptions = ["Ativa", "Vencida", "Vencendo"];
-     const typeNoteOptions = ["Garantia Legal", "Garantia Contratual", "Garantia Estendida"];
+     const typeNoteOptions = ["Garantia Legal", "Garantia de Assistência", "Garantia Estendida"];
 
      const handleStatusToggle = (status: string) => {
           setFilters((prev) => ({
