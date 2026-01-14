@@ -1,13 +1,15 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { CircleCheckBig, FileText, CalendarDays, ClockAlert, Store, Phone, ShieldCheck, CircleArrowLeft, User, DollarSign } from "lucide-react"
+import { CircleCheckBig, FileText, CalendarDays, ClockAlert, Store, Phone, ShieldCheck, CircleArrowLeft, User, DollarSign, Clock, XCircle, CheckCircle } from "lucide-react"
 import Header from "../components/Header";
 import { type Nota } from "../data";
 import Swal from "sweetalert2";
+import { useToast } from "../contexts/ToastContext";
 
 // Componente da tela da nota
 function NoteScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
   const note = location.state?.note as Nota | undefined;
 
   // Se não houver nota, redireciona para home
@@ -19,13 +21,13 @@ function NoteScreen() {
   // Função para verificar se a nota está na lixeira - sempre verifica diretamente
   const isInTrash = (): boolean => {
     if (!note || !note.id) return false;
-    
+
     try {
       const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
       if (!Array.isArray(trashNotes) || trashNotes.length === 0) {
         return false;
       }
-      
+
       // Verificar se existe alguma nota na lixeira com o mesmo ID
       // Comparação rigorosa: verifica ID exato
       const found = trashNotes.some((n: Nota) => {
@@ -33,7 +35,7 @@ function NoteScreen() {
         // Comparar apenas o ID (número)
         return n.id === note.id;
       });
-      
+
       return found;
     } catch (error) {
       // Em caso de erro, assume que não está na lixeira
@@ -59,6 +61,20 @@ function NoteScreen() {
     }
   };
 
+  // Função para obter ícone do status (igual ao SummaryCard)
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "Ativa":
+        return CheckCircle;
+      case "Vencendo":
+        return Clock;
+      case "Vencida":
+        return XCircle;
+      default:
+        return CircleCheckBig;
+    }
+  };
+
   // Buscar nome do usuário logado
   const loggedUserEmail = localStorage.getItem("loggedUserEmail") || sessionStorage.getItem("loggedUserEmail");
   const users = JSON.parse(localStorage.getItem("users") || "[]");
@@ -69,13 +85,35 @@ function NoteScreen() {
   const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
   const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
   const pdfData = isInTrash() ? trashPdfs[note.id] : pdfs[note.id];
+  
+  // Carregar dados adicionais para Garantia de Assistência
+  const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
+  const assistanceWarrantyPdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
+  const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
+  const assistanceWarrantyDate = assistanceWarrantyDates[note.id];
+  const assistanceWarrantyPdfData = isInTrash() 
+    ? trashAssistancePdfs[note.id] 
+    : assistanceWarrantyPdfs[note.id];
+  
+  // Carregar dados adicionais para Garantia Estendida
+  const extendedWarrantyDates = JSON.parse(localStorage.getItem("extendedWarrantyDates") || "{}");
+  const extendedWarrantyPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
+  const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
+  const extendedWarrantyDate = extendedWarrantyDates[note.id];
+  const extendedWarrantyPdfData = isInTrash() 
+    ? trashExtendedPdfs[note.id] 
+    : extendedWarrantyPdfs[note.id];
+  
+  // Verificar se é Garantia de Assistência ou Garantia Estendida
+  const isAssistanceWarranty = note.typeNote === "Garantia de Assistência";
+  const isExtendedWarranty = note.typeNote === "Garantia Estendida";
 
   // Função para formatar telefone brasileiro
   const formatPhone = (phone: string): string => {
     if (!phone) return "";
     // Remove tudo que não é número
     const numbers = phone.replace(/\D/g, "");
-    
+
     // Formata conforme o tamanho
     if (numbers.length === 10) {
       // Telefone fixo: (XX) XXXX-XXXX
@@ -96,10 +134,11 @@ function NoteScreen() {
     }).format(value);
   };
 
-  const handleViewPdf = () => {
-    if (pdfData && pdfData.data) {
+  const handleViewPdf = (pdfToView?: { fileName: string; data: string }) => {
+    const pdf = pdfToView || pdfData;
+    if (pdf && pdf.data) {
       // Converter base64 para blob
-      const byteCharacters = atob(pdfData.data.split(',')[1]);
+      const byteCharacters = atob(pdf.data.split(',')[1]);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -136,11 +175,26 @@ function NoteScreen() {
           localStorage.setItem("trashNotes", JSON.stringify(trashNotes));
         }
 
-        // Salvar PDF na lixeira também (manter referência)
+        // Salvar PDFs na lixeira também (manter referência)
+        const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
+        const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
+        const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
+        
         if (pdfData) {
-          const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
           trashPdfs[note.id] = pdfData;
           localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
+        }
+        
+        // Salvar PDF de assistência na lixeira se existir
+        if (isAssistanceWarranty && assistanceWarrantyPdfData) {
+          trashAssistancePdfs[note.id] = assistanceWarrantyPdfData;
+          localStorage.setItem("trashAssistancePdfs", JSON.stringify(trashAssistancePdfs));
+        }
+        
+        // Salvar PDF de garantia estendida na lixeira se existir
+        if (isExtendedWarranty && extendedWarrantyPdfData) {
+          trashExtendedPdfs[note.id] = extendedWarrantyPdfData;
+          localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
         }
 
         // Verificar se é uma nota fixa (id <= 4) ou uma nota do localStorage
@@ -160,21 +214,31 @@ function NoteScreen() {
           localStorage.setItem("notas", JSON.stringify(updatedNotas));
         }
 
-        // Remover PDF da lista principal (mas manter na lixeira)
+        // Remover PDFs da lista principal (mas manter na lixeira)
         if (pdfData) {
           const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
           delete pdfs[note.id];
           localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
         }
+        
+        // Remover PDF de assistência da lista principal se existir
+        if (isAssistanceWarranty && assistanceWarrantyPdfData) {
+          const assistancePdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
+          delete assistancePdfs[note.id];
+          localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistancePdfs));
+        }
+        
+        // Remover PDF de garantia estendida da lista principal se existir
+        if (isExtendedWarranty && extendedWarrantyPdfData) {
+          const extendedPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
+          delete extendedPdfs[note.id];
+          localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedPdfs));
+        }
 
-        Swal.fire({
-          title: "Movida para Lixeira!",
-          text: "A nota foi movida para a lixeira com sucesso.",
-          icon: "success",
-          confirmButtonText: "OK",
-        }).then(() => {
+        showToast("A nota foi movida para a lixeira com sucesso.", "success");
+        setTimeout(() => {
           navigate("/home");
-        });
+        }, 500);
       }
     });
   };
@@ -196,16 +260,41 @@ function NoteScreen() {
         const updatedTrashNotes = trashNotes.filter((n: Nota) => n.id !== note.id);
         localStorage.setItem("trashNotes", JSON.stringify(updatedTrashNotes));
 
-        // Restaurar PDF se existir na lixeira
+        // Restaurar PDFs se existirem na lixeira
+        const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
+        const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
+        const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
+        
         if (pdfData) {
           const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
           pdfs[note.id] = pdfData;
           localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
 
           // Remover da lixeira de PDFs
-          const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
           delete trashPdfs[note.id];
           localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
+        }
+        
+        // Restaurar PDF de assistência se existir na lixeira
+        if (isAssistanceWarranty && trashAssistancePdfs[note.id]) {
+          const assistancePdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
+          assistancePdfs[note.id] = trashAssistancePdfs[note.id];
+          localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistancePdfs));
+          
+          // Remover da lixeira
+          delete trashAssistancePdfs[note.id];
+          localStorage.setItem("trashAssistancePdfs", JSON.stringify(trashAssistancePdfs));
+        }
+        
+        // Restaurar PDF de garantia estendida se existir na lixeira
+        if (isExtendedWarranty && trashExtendedPdfs[note.id]) {
+          const extendedPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
+          extendedPdfs[note.id] = trashExtendedPdfs[note.id];
+          localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedPdfs));
+          
+          // Remover da lixeira
+          delete trashExtendedPdfs[note.id];
+          localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
         }
 
         // Verificar se é uma nota fixa (id <= 4) ou uma nota do localStorage
@@ -225,14 +314,10 @@ function NoteScreen() {
           }
         }
 
-        Swal.fire({
-          title: "Restaurada!",
-          text: "A nota foi restaurada com sucesso.",
-          icon: "success",
-          confirmButtonText: "OK",
-        }).then(() => {
+        showToast("A nota foi restaurada com sucesso.", "success");
+        setTimeout(() => {
           navigate("/trash");
-        });
+        }, 500);
       }
     });
   };
@@ -258,7 +343,10 @@ function NoteScreen() {
           rounded-full ${getStatusColor(note.status)}
           shadow transition duration-300 ease-out hover:-translate-y-1
         `}>
-            <CircleCheckBig className="w-4 h-4 md:w-5 md:h-5" />
+            {(() => {
+              const StatusIcon = getStatusIcon(note.status);
+              return <StatusIcon className="w-4 h-4 md:w-5 md:h-5" />;
+            })()}
             <p className="font-medium text-ts md:text-sm lg:text-base">{note.status}</p>
           </div>
         </div>
@@ -271,18 +359,41 @@ function NoteScreen() {
               <FileText className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" />
             </div>
 
-            {pdfData ? (
-              <button
-                onClick={handleViewPdf}
-                className="mt-2 md:mt-3 font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
-              >
-                Visualizar em PDF
-              </button>
-            ) : (
-              <p className="mt-2 md:mt-3 text-sm md:text-base lg:text-lg text-gray-400">
-                Nenhum PDF anexado
-              </p>
-            )}
+            {/* PDFs disponíveis */}
+            <div className="mt-2 md:mt-3 flex flex-col gap-2 items-center">
+              {pdfData ? (
+                <button
+                  onClick={() => handleViewPdf()}
+                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
+                >
+                  Visualizar Nota Fiscal (PDF)
+                </button>
+              ) : (
+                <p className="text-sm md:text-base lg:text-lg text-gray-400">
+                  Nenhum PDF anexado
+                </p>
+              )}
+              
+              {/* PDF de Garantia de Assistência */}
+              {isAssistanceWarranty && assistanceWarrantyPdfData && (
+                <button
+                  onClick={() => handleViewPdf(assistanceWarrantyPdfData)}
+                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
+                >
+                  Visualizar Garantia de Assistência (PDF)
+                </button>
+              )}
+              
+              {/* PDF de Garantia Estendida */}
+              {isExtendedWarranty && extendedWarrantyPdfData && (
+                <button
+                  onClick={() => handleViewPdf(extendedWarrantyPdfData)}
+                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
+                >
+                  Visualizar Garantia Estendida (PDF)
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="">
@@ -344,6 +455,28 @@ function NoteScreen() {
                   <p className="text-sm md:text-base">{note.typeNote}</p>
                 </div>
               </div>
+
+              {/* Data do Fim da Garantia de Assistência - apenas se for Garantia de Assistência */}
+              {isAssistanceWarranty && assistanceWarrantyDate && (
+                <div className="flex flex-row items-start gap-2">
+                  <ClockAlert color="#724EBF" size={35} className="shrink-0" />
+                  <div className="flex flex-col">
+                    <p className="font-semibold text-sm md:text-base">Fim da Garantia de Assistência:</p>
+                    <p className="text-sm md:text-base">{assistanceWarrantyDate}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Data do Fim da Garantia Estendida - apenas se for Garantia Estendida */}
+              {isExtendedWarranty && extendedWarrantyDate && (
+                <div className="flex flex-row items-start gap-2">
+                  <ClockAlert color="#724EBF" size={35} className="shrink-0" />
+                  <div className="flex flex-col">
+                    <p className="font-semibold text-sm md:text-base">Fim da Garantia Estendida:</p>
+                    <p className="text-sm md:text-base">{extendedWarrantyDate}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-row items-start gap-2">
                 <User color="#724EBF" size={35} className="shrink-0" />
