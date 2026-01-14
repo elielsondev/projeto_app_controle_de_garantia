@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Upload, X, CircleArrowLeft } from "lucide-react";
 import Header from "../components/Header";
-import Swal from "sweetalert2";
+import { useToast } from "../contexts/ToastContext";
 import { notas } from "../data";
 import type { Nota } from "../data";
 
 function RegistrationNote() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
   const noteToEdit = location.state?.note as Nota | undefined;
   const isEditMode = !!noteToEdit;
 
@@ -22,10 +23,21 @@ function RegistrationNote() {
     observations: "",
     typeNote: "",
     value: "",
+    extendedWarrantyDate: "", // Data fim garantia estendida
+    assistanceWarrantyDate: "", // Data fim garantia de assistência
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfFileName, setPdfFileName] = useState("");
   const [hasExistingPdf, setHasExistingPdf] = useState(false);
+  
+  // PDFs adicionais para garantias
+  const [extendedWarrantyPdf, setExtendedWarrantyPdf] = useState<File | null>(null);
+  const [extendedWarrantyPdfName, setExtendedWarrantyPdfName] = useState("");
+  const [hasExistingExtendedPdf, setHasExistingExtendedPdf] = useState(false);
+  
+  const [assistanceWarrantyPdf, setAssistanceWarrantyPdf] = useState<File | null>(null);
+  const [assistanceWarrantyPdfName, setAssistanceWarrantyPdfName] = useState("");
+  const [hasExistingAssistancePdf, setHasExistingAssistancePdf] = useState(false);
 
   // Função para formatar valor ao carregar
   const formatValueForInput = (value: number): string => {
@@ -45,6 +57,13 @@ function RegistrationNote() {
         return `${year}-${month}-${day}`;
       };
 
+      // Carregar datas adicionais
+      const extendedWarrantyDates = JSON.parse(localStorage.getItem("extendedWarrantyDates") || "{}");
+      const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
+      
+      const extendedDate = extendedWarrantyDates[noteToEdit.id] ? convertDateToInput(extendedWarrantyDates[noteToEdit.id]) : "";
+      const assistanceDate = assistanceWarrantyDates[noteToEdit.id] ? convertDateToInput(assistanceWarrantyDates[noteToEdit.id]) : "";
+
       setFormData({
         numeroNota: noteToEdit.numeroNota || "",
         title: noteToEdit.title || "",
@@ -55,13 +74,28 @@ function RegistrationNote() {
         observations: noteToEdit.observations || "",
         typeNote: noteToEdit.typeNote || "",
         value: formatValueForInput(noteToEdit.value),
+        extendedWarrantyDate: extendedDate,
+        assistanceWarrantyDate: assistanceDate,
       });
 
-      // Verificar se há PDF existente
+      // Verificar se há PDFs existentes
       const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
+      const extendedWarrantyPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
+      const assistanceWarrantyPdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
+      
       if (pdfs[noteToEdit.id]) {
         setHasExistingPdf(true);
         setPdfFileName(pdfs[noteToEdit.id].fileName || "PDF anexado");
+      }
+      
+      if (extendedWarrantyPdfs[noteToEdit.id]) {
+        setHasExistingExtendedPdf(true);
+        setExtendedWarrantyPdfName(extendedWarrantyPdfs[noteToEdit.id].fileName || "PDF anexado");
+      }
+      
+      if (assistanceWarrantyPdfs[noteToEdit.id]) {
+        setHasExistingAssistancePdf(true);
+        setAssistanceWarrantyPdfName(assistanceWarrantyPdfs[noteToEdit.id].fileName || "PDF anexado");
       }
     }
   }, [noteToEdit]);
@@ -70,10 +104,10 @@ function RegistrationNote() {
   const formatPhoneInput = (value: string): string => {
     // Remove tudo que não é número
     const numbers = value.replace(/\D/g, "");
-    
+
     // Limita a 11 dígitos (celular)
     const limitedNumbers = numbers.slice(0, 11);
-    
+
     // Formata conforme o tamanho
     if (limitedNumbers.length <= 2) {
       return limitedNumbers ? `(${limitedNumbers}` : "";
@@ -92,12 +126,12 @@ function RegistrationNote() {
   const formatCurrencyInput = (value: string): string => {
     // Remove tudo que não é número
     const numbers = value.replace(/\D/g, "");
-    
+
     if (!numbers) return "";
-    
+
     // Converte para número e divide por 100 para ter centavos
     const amount = parseFloat(numbers) / 100;
-    
+
     // Formata como moeda brasileira
     return new Intl.NumberFormat("pt-BR", {
       minimumFractionDigits: 2,
@@ -109,7 +143,7 @@ function RegistrationNote() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    
+
     // Aplicar formatação específica para telefone e valor
     if (name === "phone") {
       setFormData((prev) => ({
@@ -136,12 +170,31 @@ function RegistrationNote() {
         setPdfFile(file);
         setPdfFileName(file.name);
       } else {
-        Swal.fire({
-          title: "Erro!",
-          text: "Por favor, selecione apenas arquivos PDF",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
+        showToast("Por favor, selecione apenas arquivos PDF", "error");
+      }
+    }
+  };
+
+  const handleExtendedWarrantyPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type === "application/pdf") {
+        setExtendedWarrantyPdf(file);
+        setExtendedWarrantyPdfName(file.name);
+      } else {
+        showToast("Por favor, selecione apenas arquivos PDF", "error");
+      }
+    }
+  };
+
+  const handleAssistanceWarrantyPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type === "application/pdf") {
+        setAssistanceWarrantyPdf(file);
+        setAssistanceWarrantyPdfName(file.name);
+      } else {
+        showToast("Por favor, selecione apenas arquivos PDF", "error");
       }
     }
   };
@@ -165,9 +218,9 @@ function RegistrationNote() {
     const due = new Date(year, month - 1, day);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const daysUntilDue = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysUntilDue < 0) return "Vencida";
     if (daysUntilDue <= 30) return "Vencendo";
     return "Ativa";
@@ -178,27 +231,18 @@ function RegistrationNote() {
 
     // Validação dos campos obrigatórios
     if (!formData.numeroNota || !formData.title || !formData.store || !formData.purchaseDate || !formData.dueDate || !formData.typeNote || !formData.value) {
-      Swal.fire({
-        title: "Campos obrigatórios!",
-        text: "Por favor, preencha todos os campos marcados com *",
-        icon: "warning",
-        confirmButtonText: "OK",
-      });
+      showToast("Por favor, preencha todos os campos marcados com *", "warning");
       return;
     }
 
     // Buscar email do usuário logado
     const loggedUserEmail = localStorage.getItem("loggedUserEmail") || sessionStorage.getItem("loggedUserEmail");
-    
+
     if (!loggedUserEmail) {
-      Swal.fire({
-        title: "Erro!",
-        text: "Usuário não identificado. Por favor, faça login novamente.",
-        icon: "error",
-        confirmButtonText: "OK",
-      }).then(() => {
+      showToast("Usuário não identificado. Por favor, faça login novamente.", "error");
+      setTimeout(() => {
         navigate("/login");
-      });
+      }, 1000);
       return;
     }
 
@@ -242,7 +286,7 @@ function RegistrationNote() {
       localStorage.setItem("notas", JSON.stringify(savedNotas));
     } else {
       // Modo de criação - criar nova nota
-      const maxId = allNotas.length > 0 
+      const maxId = allNotas.length > 0
         ? Math.max(...allNotas.map((n: Nota) => n.id))
         : 0;
 
@@ -266,58 +310,123 @@ function RegistrationNote() {
       localStorage.setItem("notas", JSON.stringify(savedNotas));
     }
 
-    // Gerenciar PDFs
+    // Gerenciar PDFs principais
     const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
-    
-    if (pdfFile) {
-      // Se houver PDF novo, converter para base64 e salvar
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        pdfs[updatedNote.id] = {
-          fileName: pdfFileName,
-          data: base64String,
-        };
-        localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+    const extendedWarrantyPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
+    const assistanceWarrantyPdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
+    const extendedWarrantyDates = JSON.parse(localStorage.getItem("extendedWarrantyDates") || "{}");
+    const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
 
-        Swal.fire({
-          title: "Sucesso!",
-          text: isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!",
-          icon: "success",
-          confirmButtonText: "OK",
-        }).then(() => {
-          navigate("/home");
-        });
-      };
-      reader.onerror = () => {
-        Swal.fire({
-          title: "Erro!",
-          text: "Erro ao processar o PDF",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
-      };
-      reader.readAsDataURL(pdfFile);
-    } else {
-      // Se estiver editando e não houver PDF novo
-      if (isEditMode && noteToEdit) {
-        // Se o usuário removeu o PDF existente, remover do localStorage
-        if (!hasExistingPdf && pdfs[noteToEdit.id]) {
-          delete pdfs[noteToEdit.id];
-          localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+    // Salvar datas adicionais
+    if (formData.typeNote === "Garantia Estendida" && formData.extendedWarrantyDate) {
+      extendedWarrantyDates[updatedNote.id] = formatDate(formData.extendedWarrantyDate);
+      localStorage.setItem("extendedWarrantyDates", JSON.stringify(extendedWarrantyDates));
+    }
+
+    if (formData.typeNote === "Garantia de Assistência" && formData.assistanceWarrantyDate) {
+      assistanceWarrantyDates[updatedNote.id] = formatDate(formData.assistanceWarrantyDate);
+      localStorage.setItem("assistanceWarrantyDates", JSON.stringify(assistanceWarrantyDates));
+    }
+
+    // Função para processar todos os PDFs
+    const processPdfs = () => {
+      let pdfsToProcess = 0;
+      let pdfsProcessed = 0;
+
+      // Contar PDFs a processar
+      if (pdfFile) pdfsToProcess++;
+      if (extendedWarrantyPdf) pdfsToProcess++;
+      if (assistanceWarrantyPdf) pdfsToProcess++;
+
+      if (pdfsToProcess === 0) {
+        // Nenhum PDF novo, apenas salvar
+        if (isEditMode && noteToEdit) {
+          if (!hasExistingPdf && pdfs[noteToEdit.id]) {
+            delete pdfs[noteToEdit.id];
+            localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+          }
+          if (!hasExistingExtendedPdf && extendedWarrantyPdfs[noteToEdit.id]) {
+            delete extendedWarrantyPdfs[noteToEdit.id];
+            localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
+          }
+          if (!hasExistingAssistancePdf && assistanceWarrantyPdfs[noteToEdit.id]) {
+            delete assistanceWarrantyPdfs[noteToEdit.id];
+            localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
+          }
         }
-        // Se ainda há PDF existente e não foi removido, mantém no localStorage (não faz nada)
+        showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
+        setTimeout(() => {
+          navigate("/home");
+        }, 500);
+        return;
       }
 
-      Swal.fire({
-        title: "Sucesso!",
-        text: isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!",
-        icon: "success",
-        confirmButtonText: "OK",
-      }).then(() => {
-        navigate("/home");
-      });
-    }
+      const checkAllPdfsProcessed = () => {
+        pdfsProcessed++;
+        if (pdfsProcessed === pdfsToProcess) {
+          showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
+          setTimeout(() => {
+            navigate("/home");
+          }, 500);
+        }
+      };
+
+      // Processar PDF principal
+      if (pdfFile) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          pdfs[updatedNote.id] = {
+            fileName: pdfFileName,
+            data: base64String,
+          };
+          localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+          checkAllPdfsProcessed();
+        };
+        reader.onerror = () => {
+          showToast("Erro ao processar o PDF principal", "error");
+        };
+        reader.readAsDataURL(pdfFile);
+      }
+
+      // Processar PDF garantia estendida
+      if (extendedWarrantyPdf) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          extendedWarrantyPdfs[updatedNote.id] = {
+            fileName: extendedWarrantyPdfName,
+            data: base64String,
+          };
+          localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
+          checkAllPdfsProcessed();
+        };
+        reader.onerror = () => {
+          showToast("Erro ao processar o PDF da garantia estendida", "error");
+        };
+        reader.readAsDataURL(extendedWarrantyPdf);
+      }
+
+      // Processar PDF garantia de assistência
+      if (assistanceWarrantyPdf) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          assistanceWarrantyPdfs[updatedNote.id] = {
+            fileName: assistanceWarrantyPdfName,
+            data: base64String,
+          };
+          localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
+          checkAllPdfsProcessed();
+        };
+        reader.onerror = () => {
+          showToast("Erro ao processar o PDF da garantia de assistência", "error");
+        };
+        reader.readAsDataURL(assistanceWarrantyPdf);
+      }
+    };
+
+    processPdfs();
   };
 
   const handleGoBack = () => {
@@ -327,7 +436,7 @@ function RegistrationNote() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
-      
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Título e Botão de Voltar - Alinhados Horizontalmente */}
         <div className="relative flex items-center justify-center mb-6">
@@ -339,7 +448,7 @@ function RegistrationNote() {
             <CircleArrowLeft className="w-6 h-6" />
             <span className="font-medium">Voltar</span>
           </button>
-          
+
           <h1 className="text-2xl font-bold text-[#724EBF]">
             {isEditMode ? "Editar Nota" : "Cadastrar Nova Nota"}
           </h1>
@@ -520,10 +629,191 @@ function RegistrationNote() {
             >
               <option value="">Selecione o tipo de garantia</option>
               <option value="Garantia Legal">Garantia Legal</option>
-              <option value="Garantia Contratual">Garantia Contratual</option>
+              <option value="Garantia de Assistência">Garantia de Assistência</option>
               <option value="Garantia Estendida">Garantia Estendida</option>
             </select>
+            
+            {/* Descrição para Garantia Legal */}
+            {formData.typeNote === "Garantia Legal" && (
+              <p className="mt-2 text-sm text-gray-600 italic">
+                Garantias legais para bens não duráveis são de 90 dias (3 meses) a partir da entrega.
+              </p>
+            )}
           </div>
+
+          {/* Campos condicionais para Garantia Estendida */}
+          {formData.typeNote === "Garantia Estendida" && (
+            <>
+              {/* Data do fim da garantia estendida */}
+              <div>
+                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                  Data do fim da garantia estendida <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="extendedWarrantyDate"
+                  value={formData.extendedWarrantyDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+                  required
+                />
+              </div>
+
+              {/* Upload PDF Garantia Estendida */}
+              <div>
+                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                  Upload de Garantia Estendida (PDF)
+                </label>
+                {!extendedWarrantyPdf && !hasExistingExtendedPdf ? (
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                      <p className="mb-2 text-sm text-gray-500">
+                        <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
+                      </p>
+                      <p className="text-xs text-gray-500">PDF (MAX. 10MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleExtendedWarrantyPdfChange}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
+                        <span className="text-red-600 font-bold text-sm">PDF</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">{extendedWarrantyPdfName}</p>
+                        {extendedWarrantyPdf && (
+                          <p className="text-xs text-gray-500">
+                            {(extendedWarrantyPdf.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                        {hasExistingExtendedPdf && !extendedWarrantyPdf && (
+                          <p className="text-xs text-gray-500">PDF existente</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {hasExistingExtendedPdf && !extendedWarrantyPdf && (
+                        <label className="p-2 text-[#724EBF] hover:text-[#5a3a9f] transition cursor-pointer">
+                          <Upload className="w-5 h-5" />
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleExtendedWarrantyPdfChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExtendedWarrantyPdf(null);
+                          setExtendedWarrantyPdfName("");
+                          setHasExistingExtendedPdf(false);
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 transition"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Campos condicionais para Garantia de Assistência */}
+          {formData.typeNote === "Garantia de Assistência" && (
+            <>
+              {/* Fim da Garantia de Assistência */}
+              <div>
+                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                  Fim da Garantia de Assistência <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="assistanceWarrantyDate"
+                  value={formData.assistanceWarrantyDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+                  required
+                />
+              </div>
+
+              {/* Upload PDF Garantia de Assistência */}
+              <div>
+                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                  Upload de Garantia de Assistência (PDF)
+                </label>
+                {!assistanceWarrantyPdf && !hasExistingAssistancePdf ? (
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                      <p className="mb-2 text-sm text-gray-500">
+                        <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
+                      </p>
+                      <p className="text-xs text-gray-500">PDF (MAX. 10MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleAssistanceWarrantyPdfChange}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
+                        <span className="text-red-600 font-bold text-sm">PDF</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">{assistanceWarrantyPdfName}</p>
+                        {assistanceWarrantyPdf && (
+                          <p className="text-xs text-gray-500">
+                            {(assistanceWarrantyPdf.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                        {hasExistingAssistancePdf && !assistanceWarrantyPdf && (
+                          <p className="text-xs text-gray-500">PDF existente</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {hasExistingAssistancePdf && !assistanceWarrantyPdf && (
+                        <label className="p-2 text-[#724EBF] hover:text-[#5a3a9f] transition cursor-pointer">
+                          <Upload className="w-5 h-5" />
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleAssistanceWarrantyPdfChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssistanceWarrantyPdf(null);
+                          setAssistanceWarrantyPdfName("");
+                          setHasExistingAssistancePdf(false);
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 transition"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Valor */}
           <div>
