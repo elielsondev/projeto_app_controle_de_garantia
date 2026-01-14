@@ -2,7 +2,7 @@
 import logo from "../assets/logo.png";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Swal from "sweetalert2";
+import { useToast } from "../contexts/ToastContext";
 
 // Componente de login de usuário
 function Login() {
@@ -10,12 +10,13 @@ function Login() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
-  const handleLogin = (e : React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const users = JSON.parse(localStorage.getItem("users") || "[]");
-  
+
     const user = users.find(
       (user: { email: string; password: string }) =>
         user.email === email && user.password === password
@@ -38,26 +39,15 @@ function Login() {
         localStorage.removeItem("loggedUserEmail");
       }
 
-      // SweetAlert2 para mostrar mensagem de sucesso
-      Swal.fire({
-        title: 'Login bem-sucedido!',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      }).then(() => {
+      showToast("Login realizado com sucesso!", "success");
+      setTimeout(() => {
         navigate("/home");
-      });
+      }, 500);
       return;
     } else {
-      // SweetAlert2 para mostrar mensagem de erro
-      Swal.fire({
-        title: 'Login falhou!',
-        text: 'Email ou senha incorretos',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      }).then(() => {
-        setEmail("");
-        setPassword("");
-      });
+      showToast("Email ou senha incorretos", "error");
+      setEmail("");
+      setPassword("");
     }
   };
 
@@ -84,7 +74,7 @@ function Login() {
           <img src={logo} alt="Logo Aponti" width={50} />
           <h2 className="text-2xl font-bold text-[#5f1bf2] leading-none"
             style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.25)" }}>
-              apontiNote</h2>
+            apontiNote</h2>
         </div>
 
         <input
@@ -115,11 +105,11 @@ function Login() {
         </button>
 
         <label className="cursor-pointer select-none">
-  <input
-    type="checkbox"
-    checked={rememberMe}
-    onChange={(e) => setRememberMe(e.target.checked)}
-    className="
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="
       appearance-none
       w-3.5 h-3.5 mr-2
       rounded-full
@@ -129,9 +119,9 @@ function Login() {
       checked:bg-[#5f1bf2]
       checked:border-[#5f1bf2]
     "
-  />
-  <span className="text-black">Manter-me conectado</span>
-</label>
+          />
+          <span className="text-black">Manter-me conectado</span>
+        </label>
 
         <div>
           <a href="#" className="text-black hover:underline">
