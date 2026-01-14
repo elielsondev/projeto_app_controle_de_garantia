@@ -124,9 +124,9 @@ function Login() {
         </label>
 
         <div>
-          <a href="#" className="text-black hover:underline">
+          <Link to="/forgot-password" className="text-black hover:underline">
             Esqueceu a senha?
-          </a>
+          </Link>
         </div>
         <hr className="border-t border-[#724EBF] mb-2" />
         <div>

@@ -355,6 +355,10 @@ function RegistrationNote() {
           }
         }
         showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
+        
+        // Disparar evento customizado para atualizar a Home
+        window.dispatchEvent(new Event("notesUpdated"));
+        
         setTimeout(() => {
           navigate("/home");
         }, 500);
@@ -365,6 +369,10 @@ function RegistrationNote() {
         pdfsProcessed++;
         if (pdfsProcessed === pdfsToProcess) {
           showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
+          
+          // Disparar evento customizado para atualizar a Home
+          window.dispatchEvent(new Event("notesUpdated"));
+          
           setTimeout(() => {
             navigate("/home");
           }, 500);

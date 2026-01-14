@@ -75,32 +75,44 @@ const Trash = () => {
         const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
         const deletedNotesIds = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
         const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
+        const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
+        const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
         const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
+        const assistancePdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
+        const extendedPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
 
         const notesToRestore = trashNotes.filter((n: Nota) => selectedNotes.has(n.id));
         const updatedTrashNotes = trashNotes.filter((n: Nota) => !selectedNotes.has(n.id));
 
         // Restaurar cada nota
         notesToRestore.forEach((note: Nota) => {
-          const isFixedNote = note.id <= 4 && !savedNotas.find((n: Nota) => n.id === note.id);
-
-          if (isFixedNote) {
-            // Se for uma nota fixa, remover do array de deletadas
-            const index = deletedNotesIds.indexOf(note.id);
-            if (index > -1) {
-              deletedNotesIds.splice(index, 1);
-            }
-          } else {
-            // Se for uma nota do localStorage, adicionar de volta
-            if (!savedNotas.find((n: Nota) => n.id === note.id)) {
-              savedNotas.push(note);
-            }
+          // Adicionar nota de volta ao localStorage
+          if (!savedNotas.find((n: Nota) => n.id === note.id)) {
+            savedNotas.push(note);
+          }
+          
+          // Remover do array de deletadas se existir (para compatibilidade com notas antigas)
+          const index = deletedNotesIds.indexOf(note.id);
+          if (index > -1) {
+            deletedNotesIds.splice(index, 1);
           }
 
-          // Restaurar PDF se existir
+          // Restaurar PDFs se existirem
           if (trashPdfs[note.id]) {
             pdfs[note.id] = trashPdfs[note.id];
             delete trashPdfs[note.id];
+          }
+          
+          // Restaurar PDF de assistência se existir
+          if (trashAssistancePdfs[note.id]) {
+            assistancePdfs[note.id] = trashAssistancePdfs[note.id];
+            delete trashAssistancePdfs[note.id];
+          }
+          
+          // Restaurar PDF de garantia estendida se existir
+          if (trashExtendedPdfs[note.id]) {
+            extendedPdfs[note.id] = trashExtendedPdfs[note.id];
+            delete trashExtendedPdfs[note.id];
           }
         });
 
@@ -108,9 +120,16 @@ const Trash = () => {
         localStorage.setItem("notas", JSON.stringify(savedNotas));
         localStorage.setItem("deletedNotes", JSON.stringify(deletedNotesIds));
         localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
+        localStorage.setItem("trashAssistancePdfs", JSON.stringify(trashAssistancePdfs));
+        localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
         localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+        localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistancePdfs));
+        localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedPdfs));
 
         loadTrashNotes();
+
+        // Disparar evento customizado para atualizar a Home
+        window.dispatchEvent(new Event("notesUpdated"));
 
         showToast(`${notesToRestore.length} nota(s) foi(ram) restaurada(s) com sucesso.`, "success");
       }
@@ -145,6 +164,9 @@ const Trash = () => {
 
         loadTrashNotes();
 
+        // Disparar evento customizado para atualizar a Home
+        window.dispatchEvent(new Event("notesUpdated"));
+
         showToast(`${selectedNotes.size} nota(s) foi(ram) excluída(s) permanentemente.`, "success");
       }
     });
@@ -168,6 +190,9 @@ const Trash = () => {
         localStorage.setItem("trashPdfs", JSON.stringify({}));
 
         loadTrashNotes();
+
+        // Disparar evento customizado para atualizar a Home
+        window.dispatchEvent(new Event("notesUpdated"));
 
         showToast("Todas as notas foram excluídas permanentemente.", "success");
       }

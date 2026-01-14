@@ -22,14 +22,8 @@ const Home = () => {
   const [allNotas, setAllNotas] = useState<Nota[]>(notas);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const isLoggedInLocal = localStorage.getItem("isLoggedIn");
-    const isLoggedInSession = sessionStorage.getItem("isLoggedIn");
-
-    if (isLoggedInLocal !== "true" && isLoggedInSession !== "true") {
-      navigate("/login");
-    }
-
+  // Função para carregar notas
+  const loadNotas = () => {
     // Carregar notas do localStorage
     const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
     // Carregar lista de notas fixas deletadas
@@ -37,6 +31,46 @@ const Home = () => {
     // Filtrar notas fixas que não foram deletadas
     const activeFixedNotas = notas.filter((n: Nota) => !deletedNotes.includes(n.id));
     setAllNotas([...activeFixedNotas, ...savedNotas]);
+  };
+
+  useEffect(() => {
+    const isLoggedInLocal = localStorage.getItem("isLoggedIn");
+    const isLoggedInSession = sessionStorage.getItem("isLoggedIn");
+
+    if (isLoggedInLocal !== "true" && isLoggedInSession !== "true") {
+      navigate("/login");
+      return;
+    }
+
+    // Carregar notas inicialmente
+    loadNotas();
+
+    // Listener para atualizar quando a página recebe foco (volta de outra página)
+    const handleFocus = () => {
+      loadNotas();
+    };
+
+    // Listener para mudanças no localStorage (de outras abas)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "notas" || e.key === "deletedNotes" || e.key === "trashNotes") {
+        loadNotas();
+      }
+    };
+
+    // Listener customizado para eventos de restauração/deleção
+    const handleCustomEvent = () => {
+      loadNotas();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("notesUpdated", handleCustomEvent);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("notesUpdated", handleCustomEvent);
+    };
   }, [navigate]);
 
   // Função para converter data DD/MM/YYYY para Date

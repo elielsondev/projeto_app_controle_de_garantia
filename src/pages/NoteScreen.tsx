@@ -236,6 +236,10 @@ function NoteScreen() {
         }
 
         showToast("A nota foi movida para a lixeira com sucesso.", "success");
+        
+        // Disparar evento customizado para atualizar a Home
+        window.dispatchEvent(new Event("notesUpdated"));
+        
         setTimeout(() => {
           navigate("/home");
         }, 500);
@@ -297,24 +301,27 @@ function NoteScreen() {
           localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
         }
 
-        // Verificar se é uma nota fixa (id <= 4) ou uma nota do localStorage
+        // Adicionar nota de volta ao localStorage
         const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
-        const isFixedNote = note.id <= 4 && !savedNotas.find((n: Nota) => n.id === note.id);
-
-        if (isFixedNote) {
-          // Se for uma nota fixa, remover do array de deletadas
-          const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
+        
+        // Verificar se a nota já existe no array (evitar duplicatas)
+        if (!savedNotas.find((n: Nota) => n.id === note.id)) {
+          savedNotas.push(note);
+          localStorage.setItem("notas", JSON.stringify(savedNotas));
+        }
+        
+        // Remover do array de deletadas se existir (para compatibilidade com notas antigas)
+        const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
+        if (deletedNotes.includes(note.id)) {
           const updatedDeletedNotes = deletedNotes.filter((id: number) => id !== note.id);
           localStorage.setItem("deletedNotes", JSON.stringify(updatedDeletedNotes));
-        } else {
-          // Se for uma nota do localStorage, adicionar de volta
-          if (!savedNotas.find((n: Nota) => n.id === note.id)) {
-            savedNotas.push(note);
-            localStorage.setItem("notas", JSON.stringify(savedNotas));
-          }
         }
 
         showToast("A nota foi restaurada com sucesso.", "success");
+        
+        // Disparar evento customizado para atualizar a Home
+        window.dispatchEvent(new Event("notesUpdated"));
+        
         setTimeout(() => {
           navigate("/trash");
         }, 500);

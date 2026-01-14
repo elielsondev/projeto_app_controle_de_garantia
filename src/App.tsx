@@ -3,6 +3,7 @@ import "./App.css";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import NoteScreen from "./pages/NoteScreen";
 import RegistrationNote from "./pages/RegistrationNote";
@@ -19,6 +20,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/home" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/note" element={<NoteScreen />} />
