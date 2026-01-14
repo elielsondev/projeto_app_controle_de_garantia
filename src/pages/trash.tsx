@@ -4,8 +4,10 @@ import TrashNoteItem from "../components/TrashNoteItem.tsx";
 import { Trash2, RotateCcw, XCircle } from "lucide-react";
 import { type Nota } from "../data";
 import Swal from "sweetalert2";
+import { useToast } from "../contexts/ToastContext";
 
 const Trash = () => {
+  const { showToast } = useToast();
   const [deletedNotes, setDeletedNotes] = useState<Nota[]>([]);
   const [selectedNotes, setSelectedNotes] = useState<Set<number>>(new Set());
 
@@ -110,12 +112,7 @@ const Trash = () => {
 
         loadTrashNotes();
 
-        Swal.fire({
-          title: "Restauradas!",
-          text: `${notesToRestore.length} nota(s) foi(ram) restaurada(s) com sucesso.`,
-          icon: "success",
-          confirmButtonText: "OK",
-        });
+        showToast(`${notesToRestore.length} nota(s) foi(ram) restaurada(s) com sucesso.`, "success");
       }
     });
   };
@@ -148,12 +145,7 @@ const Trash = () => {
 
         loadTrashNotes();
 
-        Swal.fire({
-          title: "Excluídas!",
-          text: `${selectedNotes.size} nota(s) foi(ram) excluída(s) permanentemente.`,
-          icon: "success",
-          confirmButtonText: "OK",
-        });
+        showToast(`${selectedNotes.size} nota(s) foi(ram) excluída(s) permanentemente.`, "success");
       }
     });
   };
@@ -177,12 +169,7 @@ const Trash = () => {
 
         loadTrashNotes();
 
-        Swal.fire({
-          title: "Lixeira Esvaziada!",
-          text: "Todas as notas foram excluídas permanentemente.",
-          icon: "success",
-          confirmButtonText: "OK",
-        });
+        showToast("Todas as notas foram excluídas permanentemente.", "success");
       }
     });
   };
