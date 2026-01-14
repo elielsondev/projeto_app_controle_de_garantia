@@ -16,6 +16,14 @@ const TrashNoteItem = ({ note, isSelected, onSelect }: TrashNoteItemProps) => {
                     ? "text-[#CA8A04]"
                     : "text-[#D41414]";
 
+     // Função para formatar valor monetário brasileiro
+     const formatCurrency = (value: number): string => {
+          return new Intl.NumberFormat("pt-BR", {
+               style: "currency",
+               currency: "BRL",
+          }).format(value);
+     };
+
      const handleClick = () => {
           // Alternar seleção ao clicar na nota
           onSelect(note.id, !isSelected);
@@ -48,7 +56,7 @@ const TrashNoteItem = ({ note, isSelected, onSelect }: TrashNoteItemProps) => {
 
                <div className="border-t flex justify-between items-center mt-4 pt-1.5">
                     <span className="font-bold text-lg">
-                         R$ {note.value.toFixed(2).replace(".", ",")}
+                         {formatCurrency(note.value)}
                     </span>
                     <span
                          className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColor}`}
