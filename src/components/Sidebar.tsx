@@ -78,7 +78,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             {/* Lixeira */}
             <button
               onClick={() => {
-                navigate("/trash")
+                navigate("/trash");
                 onClose();
               }}
               className="flex items-center gap-2 hover:text-purple-200 transition-colors">
@@ -87,7 +87,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </button>
 
             {/* Configurações */}
-            <button className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                navigate("/settings");
+                onClose();
+              }}
+              className="flex items-center gap-2 hover:text-purple-200 transition-colors"
+            >
               <Settings size={18} />
               Configurações
             </button>
