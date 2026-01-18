@@ -134,24 +134,62 @@ function NoteScreen() {
     }).format(value);
   };
 
+  // Função para verificar se o arquivo é uma imagem
+  const isImageFile = (fileName: string): boolean => {
+    const lowerName = fileName.toLowerCase();
+    return lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/) !== null;
+  };
+
+  // Função para obter extensão do arquivo
+  const getFileExtension = (fileName: string): string => {
+    const parts = fileName.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
+  };
+
   const handleViewPdf = (pdfToView?: { fileName: string; data: string }) => {
-    const pdf = pdfToView || pdfData;
-    if (pdf && pdf.data) {
+    const file = pdfToView || pdfData;
+    if (file && file.data) {
       // Converter base64 para blob
-      const byteCharacters = atob(pdf.data.split(',')[1]);
+      const byteCharacters = atob(file.data.split(',')[1]);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Verificar se é imagem ou PDF
+      const isImage = isImageFile(file.fileName);
+      let mimeType = 'application/pdf';
+      if (isImage) {
+        const ext = getFileExtension(file.fileName).toLowerCase();
+        // Mapear extensões para mimeTypes corretos
+        const mimeTypes: { [key: string]: string } = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp'
+        };
+        mimeType = mimeTypes[ext] || `image/${ext}`;
+      }
+      const blob = new Blob([byteArray], { type: mimeType });
 
-      // Criar URL do blob e abrir em nova aba
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-
-      // Limpar a URL após um tempo para liberar memória
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      if (isImage) {
+        // Para imagens, fazer download
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        // Para PDFs, abrir em nova aba
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      }
     }
   };
 
@@ -366,38 +404,38 @@ function NoteScreen() {
               <FileText className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" />
             </div>
 
-            {/* PDFs disponíveis */}
+            {/* Arquivos disponíveis */}
             <div className="mt-2 md:mt-3 flex flex-col gap-2 items-center">
               {pdfData ? (
                 <button
                   onClick={() => handleViewPdf()}
                   className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
                 >
-                  Visualizar Nota Fiscal (PDF)
+                  Visualizar Nota Fiscal{isImageFile(pdfData.fileName) ? ` (${getFileExtension(pdfData.fileName)})` : ' (PDF)'}
                 </button>
               ) : (
                 <p className="text-sm md:text-base lg:text-lg text-gray-400">
-                  Nenhum PDF anexado
+                  Nenhum arquivo anexado
                 </p>
               )}
               
-              {/* PDF de Garantia de Assistência */}
+              {/* Arquivo de Garantia de Assistência */}
               {isAssistanceWarranty && assistanceWarrantyPdfData && (
                 <button
                   onClick={() => handleViewPdf(assistanceWarrantyPdfData)}
                   className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
                 >
-                  Visualizar Garantia de Assistência (PDF)
+                  Visualizar Garantia de Assistência{isImageFile(assistanceWarrantyPdfData.fileName) ? ` (${getFileExtension(assistanceWarrantyPdfData.fileName)})` : ' (PDF)'}
                 </button>
               )}
               
-              {/* PDF de Garantia Estendida */}
+              {/* Arquivo de Garantia Estendida */}
               {isExtendedWarranty && extendedWarrantyPdfData && (
                 <button
                   onClick={() => handleViewPdf(extendedWarrantyPdfData)}
                   className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
                 >
-                  Visualizar Garantia Estendida (PDF)
+                  Visualizar Garantia Estendida{isImageFile(extendedWarrantyPdfData.fileName) ? ` (${getFileExtension(extendedWarrantyPdfData.fileName)})` : ' (PDF)'}
                 </button>
               )}
             </div>
