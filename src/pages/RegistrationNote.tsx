@@ -338,6 +338,7 @@ function RegistrationNote() {
       if (extendedWarrantyPdf) pdfsToProcess++;
       if (assistanceWarrantyPdf) pdfsToProcess++;
 
+      // Se não há PDFs para processar, salvar e redirecionar imediatamente
       if (pdfsToProcess === 0) {
         // Nenhum PDF novo, apenas salvar
         if (isEditMode && noteToEdit) {
@@ -354,25 +355,32 @@ function RegistrationNote() {
             localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
           }
         }
+        
+        // Mostrar toast de sucesso
         showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
         
         // Disparar evento customizado para atualizar a Home
         window.dispatchEvent(new Event("notesUpdated"));
         
+        // Redirecionar para home após um breve delay
         setTimeout(() => {
           navigate("/home");
         }, 500);
+        
         return;
       }
 
+      // Se há PDFs para processar, usar callback para quando todos terminarem
       const checkAllPdfsProcessed = () => {
         pdfsProcessed++;
         if (pdfsProcessed === pdfsToProcess) {
+          // Mostrar toast de sucesso
           showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
           
           // Disparar evento customizado para atualizar a Home
           window.dispatchEvent(new Event("notesUpdated"));
           
+          // Redirecionar para home após um breve delay
           setTimeout(() => {
             navigate("/home");
           }, 500);
@@ -393,6 +401,7 @@ function RegistrationNote() {
         };
         reader.onerror = () => {
           showToast("Erro ao processar o PDF principal", "error");
+          checkAllPdfsProcessed(); // Contar mesmo em caso de erro para não travar
         };
         reader.readAsDataURL(pdfFile);
       }
@@ -411,6 +420,7 @@ function RegistrationNote() {
         };
         reader.onerror = () => {
           showToast("Erro ao processar o PDF da garantia estendida", "error");
+          checkAllPdfsProcessed(); // Contar mesmo em caso de erro para não travar
         };
         reader.readAsDataURL(extendedWarrantyPdf);
       }
@@ -429,11 +439,13 @@ function RegistrationNote() {
         };
         reader.onerror = () => {
           showToast("Erro ao processar o PDF da garantia de assistência", "error");
+          checkAllPdfsProcessed(); // Contar mesmo em caso de erro para não travar
         };
         reader.readAsDataURL(assistanceWarrantyPdf);
       }
     };
 
+    // Executar processamento de PDFs
     processPdfs();
   };
 
@@ -511,6 +523,7 @@ function RegistrationNote() {
                         accept=".pdf"
                         onChange={handleFileChange}
                         className="hidden"
+                        aria-label="Atualizar PDF da nota fiscal"
                       />
                     </label>
                   )}
@@ -522,6 +535,7 @@ function RegistrationNote() {
                       setHasExistingPdf(false);
                     }}
                     className="p-2 text-gray-400 hover:text-red-600 transition"
+                    aria-label="Remover PDF da nota fiscal"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -580,11 +594,12 @@ function RegistrationNote() {
 
           {/* Data de Compra */}
           <div>
-            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="purchaseDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
               Data de Compra <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
+              id="purchaseDate"
               name="purchaseDate"
               value={formData.purchaseDate}
               onChange={handleInputChange}
@@ -595,11 +610,12 @@ function RegistrationNote() {
 
           {/* Fim da Garantia */}
           <div>
-            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="dueDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
               Fim da Garantia <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
+              id="dueDate"
               name="dueDate"
               value={formData.dueDate}
               onChange={handleInputChange}
@@ -625,10 +641,11 @@ function RegistrationNote() {
 
           {/* Tipo de Garantia */}
           <div>
-            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="typeNote" className="block text-left text-sm font-medium text-gray-700 mb-2">
               Tipo de Garantia <span className="text-red-500">*</span>
             </label>
             <select
+              id="typeNote"
               name="typeNote"
               value={formData.typeNote}
               onChange={handleInputChange}
@@ -654,11 +671,12 @@ function RegistrationNote() {
             <>
               {/* Data do fim da garantia estendida */}
               <div>
-                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="extendedWarrantyDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
                   Data do fim da garantia estendida <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
+                  id="extendedWarrantyDate"
                   name="extendedWarrantyDate"
                   value={formData.extendedWarrantyDate}
                   onChange={handleInputChange}
@@ -715,6 +733,7 @@ function RegistrationNote() {
                             accept=".pdf"
                             onChange={handleExtendedWarrantyPdfChange}
                             className="hidden"
+                            aria-label="Atualizar PDF da garantia estendida"
                           />
                         </label>
                       )}
@@ -726,6 +745,7 @@ function RegistrationNote() {
                           setHasExistingExtendedPdf(false);
                         }}
                         className="p-2 text-gray-400 hover:text-red-600 transition"
+                        aria-label="Remover PDF da garantia estendida"
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -741,11 +761,12 @@ function RegistrationNote() {
             <>
               {/* Fim da Garantia de Assistência */}
               <div>
-                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="assistanceWarrantyDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
                   Fim da Garantia de Assistência <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
+                  id="assistanceWarrantyDate"
                   name="assistanceWarrantyDate"
                   value={formData.assistanceWarrantyDate}
                   onChange={handleInputChange}
@@ -802,6 +823,7 @@ function RegistrationNote() {
                             accept=".pdf"
                             onChange={handleAssistanceWarrantyPdfChange}
                             className="hidden"
+                            aria-label="Atualizar PDF da garantia de assistência"
                           />
                         </label>
                       )}
@@ -813,6 +835,7 @@ function RegistrationNote() {
                           setHasExistingAssistancePdf(false);
                         }}
                         className="p-2 text-gray-400 hover:text-red-600 transition"
+                        aria-label="Remover PDF da garantia de assistência"
                       >
                         <X className="w-5 h-5" />
                       </button>
