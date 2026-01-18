@@ -168,11 +168,12 @@ function RegistrationNote() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type === "application/pdf") {
+      const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
+      if (isValidType) {
         setPdfFile(file);
         setPdfFileName(file.name);
       } else {
-        showToast("Por favor, selecione apenas arquivos PDF", "error");
+        showToast("Por favor, selecione apenas arquivos PDF ou imagens", "error");
       }
     }
   };
@@ -180,13 +181,37 @@ function RegistrationNote() {
   const handleExtendedWarrantyPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type === "application/pdf") {
+      const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
+      if (isValidType) {
         setExtendedWarrantyPdf(file);
         setExtendedWarrantyPdfName(file.name);
       } else {
-        showToast("Por favor, selecione apenas arquivos PDF", "error");
+        showToast("Por favor, selecione apenas arquivos PDF ou imagens", "error");
       }
     }
+  };
+
+  // Função para determinar o tipo de arquivo e retornar estilo/ícone
+  const getFileTypeInfo = (fileName: string, file?: File | null) => {
+    const lowerName = fileName.toLowerCase();
+    const fileType = file?.type || "";
+    
+    // Verificar se é imagem
+    if (fileType.startsWith("image/") || lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
+      const extension = lowerName.split('.').pop()?.toUpperCase() || "IMG";
+      return {
+        label: extension,
+        bgColor: "bg-blue-100",
+        textColor: "text-blue-600"
+      };
+    }
+    
+    // Se não for imagem, é PDF
+    return {
+      label: "PDF",
+      bgColor: "bg-red-100",
+      textColor: "text-red-600"
+    };
   };
 
   const formatDate = (dateString: string): string => {
@@ -465,10 +490,10 @@ function RegistrationNote() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-          {/* Upload de PDF */}
+          {/* Upload de PDF/Imagem */}
           <div>
             <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-              Upload de Nota Fiscal (PDF)
+              Upload de Nota Fiscal (PDF ou Imagem)
             </label>
             {!pdfFile && !hasExistingPdf ? (
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
@@ -477,11 +502,11 @@ function RegistrationNote() {
                   <p className="mb-2 text-sm text-gray-500">
                     <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
                   </p>
-                  <p className="text-xs text-gray-500">PDF (MAX. 10MB)</p>
+                  <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB)</p>
                 </div>
                 <input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -489,8 +514,10 @@ function RegistrationNote() {
             ) : (
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-                    <span className="text-red-600 font-bold text-sm">PDF</span>
+                  <div className={`w-10 h-10 ${getFileTypeInfo(pdfFileName, pdfFile).bgColor} rounded flex items-center justify-center`}>
+                    <span className={`${getFileTypeInfo(pdfFileName, pdfFile).textColor} font-bold text-sm`}>
+                      {getFileTypeInfo(pdfFileName, pdfFile).label}
+                    </span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">{pdfFileName}</p>
@@ -500,7 +527,7 @@ function RegistrationNote() {
                       </p>
                     )}
                     {hasExistingPdf && !pdfFile && (
-                      <p className="text-xs text-gray-500">PDF existente</p>
+                      <p className="text-xs text-gray-500">Arquivo existente</p>
                     )}
                   </div>
                 </div>
@@ -510,10 +537,10 @@ function RegistrationNote() {
                       <Upload className="w-5 h-5" />
                       <input
                         type="file"
-                        accept=".pdf"
+                        accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
                         onChange={handleFileChange}
                         className="hidden"
-                        aria-label="Atualizar PDF da nota fiscal"
+                        aria-label="Atualizar arquivo da nota fiscal"
                       />
                     </label>
                   )}
@@ -674,10 +701,10 @@ function RegistrationNote() {
                 />
               </div>
 
-              {/* Upload PDF Garantia Estendida */}
+              {/* Upload PDF/Imagem Garantia Estendida */}
               <div>
                 <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-                  Upload de Garantia Estendida (PDF)
+                  Upload de Garantia Estendida (PDF ou Imagem)
                 </label>
                 {!extendedWarrantyPdf && !hasExistingExtendedPdf ? (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
@@ -686,11 +713,11 @@ function RegistrationNote() {
                       <p className="mb-2 text-sm text-gray-500">
                         <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
                       </p>
-                      <p className="text-xs text-gray-500">PDF (MAX. 10MB)</p>
+                      <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB)</p>
                     </div>
                     <input
                       type="file"
-                      accept=".pdf"
+                      accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
                       onChange={handleExtendedWarrantyPdfChange}
                       className="hidden"
                     />
@@ -698,8 +725,10 @@ function RegistrationNote() {
                 ) : (
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-                        <span className="text-red-600 font-bold text-sm">PDF</span>
+                      <div className={`w-10 h-10 ${getFileTypeInfo(extendedWarrantyPdfName, extendedWarrantyPdf).bgColor} rounded flex items-center justify-center`}>
+                        <span className={`${getFileTypeInfo(extendedWarrantyPdfName, extendedWarrantyPdf).textColor} font-bold text-sm`}>
+                          {getFileTypeInfo(extendedWarrantyPdfName, extendedWarrantyPdf).label}
+                        </span>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">{extendedWarrantyPdfName}</p>
@@ -709,7 +738,7 @@ function RegistrationNote() {
                           </p>
                         )}
                         {hasExistingExtendedPdf && !extendedWarrantyPdf && (
-                          <p className="text-xs text-gray-500">PDF existente</p>
+                          <p className="text-xs text-gray-500">Arquivo existente</p>
                         )}
                       </div>
                     </div>
@@ -719,10 +748,10 @@ function RegistrationNote() {
                           <Upload className="w-5 h-5" />
                           <input
                             type="file"
-                            accept=".pdf"
+                            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
                             onChange={handleExtendedWarrantyPdfChange}
                             className="hidden"
-                            aria-label="Atualizar PDF da garantia estendida"
+                            aria-label="Atualizar arquivo da garantia estendida"
                           />
                         </label>
                       )}
