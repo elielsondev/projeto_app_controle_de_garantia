@@ -6,6 +6,8 @@ import { useToast } from "../contexts/ToastContext";
 import { notas } from "../data";
 import type { Nota } from "../data";
 
+type PdfListItem = { file?: File; fileName: string; data?: string };
+
 function RegistrationNote() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,9 +28,8 @@ function RegistrationNote() {
     extendedWarrantyDate: "", // Data fim garantia estendida
     assistanceWarrantyDate: "", // Data fim garantia de assistência
   });
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfFileName, setPdfFileName] = useState("");
-  const [hasExistingPdf, setHasExistingPdf] = useState(false);
+  // Lista de notas fiscais (permite múltiplos anexos)
+  const [pdfFileList, setPdfFileList] = useState<PdfListItem[]>([]);
   
   // PDFs adicionais para garantias
   const [extendedWarrantyPdf, setExtendedWarrantyPdf] = useState<File | null>(null);
@@ -86,8 +87,9 @@ function RegistrationNote() {
       const assistanceWarrantyPdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
       
       if (pdfs[noteToEdit.id]) {
-        setHasExistingPdf(true);
-        setPdfFileName(pdfs[noteToEdit.id].fileName || "PDF anexado");
+        const raw = pdfs[noteToEdit.id];
+        const list = Array.isArray(raw) ? raw : [{ fileName: raw.fileName || "PDF anexado", data: raw.data }];
+        setPdfFileList(list.map((f: { fileName: string; data: string }) => ({ fileName: f.fileName, data: f.data })));
       }
       
       if (extendedWarrantyPdfs[noteToEdit.id]) {
@@ -166,16 +168,22 @@ function RegistrationNote() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
-      if (isValidType) {
-        setPdfFile(file);
-        setPdfFileName(file.name);
-      } else {
-        showToast("Por favor, selecione apenas arquivos PDF ou imagens", "error");
+    const files = e.target.files;
+    if (files?.length) {
+      const toAdd: PdfListItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
+        if (isValidType) toAdd.push({ file, fileName: file.name });
+        else showToast(`"${file.name}": use apenas PDF ou imagens`, "error");
       }
+      if (toAdd.length) setPdfFileList((prev) => [...prev, ...toAdd]);
+      e.target.value = "";
     }
+  };
+
+  const removePdfFromList = (index: number) => {
+    setPdfFileList((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleExtendedWarrantyPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,19 +356,26 @@ function RegistrationNote() {
       let pdfsToProcess = 0;
       let pdfsProcessed = 0;
 
-      // Contar PDFs a processar
-      if (pdfFile) pdfsToProcess++;
+      // Contar PDFs a processar (apenas os que precisam de conversão assíncrona)
+      const hasNewNotaPdfs = pdfFileList.some((x) => x.file);
+      if (hasNewNotaPdfs) pdfsToProcess++;
       if (extendedWarrantyPdf) pdfsToProcess++;
       if (assistanceWarrantyPdf) pdfsToProcess++;
 
-      // Se não há PDFs para processar, salvar e redirecionar imediatamente
+      // Persistir lista de notas fiscais (apenas .data, sem conversão)
+      const saveNotaPdfList = () => {
+        const mainResult = pdfFileList
+          .filter((x): x is PdfListItem & { data: string } => !!x.data)
+          .map((x) => ({ fileName: x.fileName, data: x.data }));
+        if (mainResult.length) pdfs[updatedNote.id] = mainResult;
+        else delete pdfs[updatedNote.id];
+        localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+      };
+
+      // Se não há PDFs para processar (async), salvar o que temos e redirecionar
       if (pdfsToProcess === 0) {
-        // Nenhum PDF novo, apenas salvar
+        saveNotaPdfList();
         if (isEditMode && noteToEdit) {
-          if (!hasExistingPdf && pdfs[noteToEdit.id]) {
-            delete pdfs[noteToEdit.id];
-            localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
-          }
           if (!hasExistingExtendedPdf && extendedWarrantyPdfs[noteToEdit.id]) {
             delete extendedWarrantyPdfs[noteToEdit.id];
             localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
@@ -402,23 +417,32 @@ function RegistrationNote() {
         }
       };
 
-      // Processar PDF principal
-      if (pdfFile) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          pdfs[updatedNote.id] = {
-            fileName: pdfFileName,
-            data: base64String,
-          };
-          localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
-          checkAllPdfsProcessed();
-        };
-        reader.onerror = () => {
-          showToast("Erro ao processar o PDF principal", "error");
-          checkAllPdfsProcessed(); // Contar mesmo em caso de erro para não travar
-        };
-        reader.readAsDataURL(pdfFile);
+      // Processar PDFs da nota fiscal (múltiplos)
+      if (hasNewNotaPdfs) {
+        const newItems = pdfFileList.filter((x): x is PdfListItem & { file: File } => !!x.file);
+        const existingItems = pdfFileList
+          .filter((x): x is PdfListItem & { data: string } => !!x.data)
+          .map((x) => ({ fileName: x.fileName, data: x.data }));
+
+        const convertFile = (item: { file: File; fileName: string }) =>
+          new Promise<{ fileName: string; data: string }>((resolve, reject) => {
+            const r = new FileReader();
+            r.onloadend = () => resolve({ fileName: item.fileName, data: r.result as string });
+            r.onerror = () => reject(new Error("Erro ao processar " + item.fileName));
+            r.readAsDataURL(item.file);
+          });
+
+        Promise.all(newItems.map(convertFile))
+          .then((converted) => {
+            const merged = [...existingItems, ...converted];
+            if (merged.length) pdfs[updatedNote.id] = merged;
+            else delete pdfs[updatedNote.id];
+            localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
+          })
+          .catch(() => {
+            showToast("Erro ao processar um ou mais arquivos da nota fiscal", "error");
+          })
+          .finally(checkAllPdfsProcessed);
       }
 
       // Processar PDF garantia estendida
@@ -490,75 +514,64 @@ function RegistrationNote() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-          {/* Upload de PDF/Imagem */}
+          {/* Upload de Notas Fiscais (PDF ou Imagem) - múltiplos */}
           <div>
             <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-              Upload de Nota Fiscal (PDF ou Imagem)
+              Upload de Notas Fiscais (PDF ou Imagem)
             </label>
-            {!pdfFile && !hasExistingPdf ? (
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
-                  </p>
-                  <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB)</p>
-                </div>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-            ) : (
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 ${getFileTypeInfo(pdfFileName, pdfFile).bgColor} rounded flex items-center justify-center`}>
-                    <span className={`${getFileTypeInfo(pdfFileName, pdfFile).textColor} font-bold text-sm`}>
-                      {getFileTypeInfo(pdfFileName, pdfFile).label}
-                    </span>
+            <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de uma nota fiscal.</p>
+            {pdfFileList.length > 0 && (
+              <div className="space-y-2 mb-2">
+                {pdfFileList.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
+                        <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
+                          {getFileTypeInfo(item.fileName, item.file).label}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
+                        {item.file && (
+                          <p className="text-xs text-gray-500">
+                            {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                        {item.data && !item.file && (
+                          <p className="text-xs text-gray-500">Arquivo existente</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePdfFromList(idx)}
+                      className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
+                      aria-label={`Remover ${item.fileName}`}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">{pdfFileName}</p>
-                    {pdfFile && (
-                      <p className="text-xs text-gray-500">
-                        {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    )}
-                    {hasExistingPdf && !pdfFile && (
-                      <p className="text-xs text-gray-500">Arquivo existente</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {hasExistingPdf && !pdfFile && (
-                    <label className="p-2 text-[#724EBF] hover:text-[#5a3a9f] transition cursor-pointer">
-                      <Upload className="w-5 h-5" />
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        aria-label="Atualizar arquivo da nota fiscal"
-                      />
-                    </label>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPdfFile(null);
-                      setPdfFileName("");
-                      setHasExistingPdf(false);
-                    }}
-                    className="p-2 text-gray-400 hover:text-red-600 transition"
-                    aria-label="Remover PDF da nota fiscal"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+                ))}
               </div>
             )}
+            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+              <div className="flex flex-col items-center justify-center py-3">
+                <Upload className="w-8 h-8 mb-1 text-gray-400" />
+                <p className="text-sm text-gray-500">
+                  <span className="font-semibold">{pdfFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
+                  {pdfFileList.length ? "" : " ou arraste os arquivos"}
+                </p>
+                <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
+              </div>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                aria-label="Anexar notas fiscais"
+              />
+            </label>
           </div>
 
           {/* Número da Nota */}

@@ -81,10 +81,16 @@ function NoteScreen() {
   const loggedUser = users.find((u: { email: string; userName: string }) => u.email === loggedUserEmail);
   const loggedUserName = loggedUser?.userName || note.createdBy;
 
-  // Verificar se há PDF associado (primeiro na lixeira, depois na lista principal)
+  // Verificar se há PDF(s) associado(s) (primeiro na lixeira, depois na lista principal)
   const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
   const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
-  const pdfData = isInTrash() ? trashPdfs[note.id] : pdfs[note.id];
+  const pdfDataRaw = isInTrash() ? trashPdfs[note.id] : pdfs[note.id];
+  // Normalizar: aceita array ou objeto único (retrocompatibilidade)
+  const pdfList: { fileName: string; data: string }[] = !pdfDataRaw
+    ? []
+    : Array.isArray(pdfDataRaw)
+      ? pdfDataRaw
+      : [{ fileName: pdfDataRaw.fileName || "PDF anexado", data: pdfDataRaw.data }];
   
   // Carregar dados adicionais para Garantia de Assistência
   const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
@@ -146,8 +152,8 @@ function NoteScreen() {
     return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
   };
 
-  const handleViewPdf = (pdfToView?: { fileName: string; data: string }) => {
-    const file = pdfToView || pdfData;
+  const handleViewPdf = (pdfToView: { fileName: string; data: string }) => {
+    const file = pdfToView;
     if (file && file.data) {
       // Converter base64 para blob
       const byteCharacters = atob(file.data.split(',')[1]);
@@ -218,8 +224,8 @@ function NoteScreen() {
         const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
         const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
         
-        if (pdfData) {
-          trashPdfs[note.id] = pdfData;
+        if (pdfDataRaw) {
+          trashPdfs[note.id] = pdfDataRaw;
           localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
         }
         
@@ -253,7 +259,7 @@ function NoteScreen() {
         }
 
         // Remover PDFs da lista principal (mas manter na lixeira)
-        if (pdfData) {
+        if (pdfDataRaw) {
           const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
           delete pdfs[note.id];
           localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
@@ -307,9 +313,9 @@ function NoteScreen() {
         const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
         const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
         
-        if (pdfData) {
+        if (pdfDataRaw) {
           const pdfs = JSON.parse(localStorage.getItem("notaPdfs") || "{}");
-          pdfs[note.id] = pdfData;
+          pdfs[note.id] = pdfDataRaw;
           localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
 
           // Remover da lixeira de PDFs
@@ -406,13 +412,17 @@ function NoteScreen() {
 
             {/* Arquivos disponíveis */}
             <div className="mt-2 md:mt-3 flex flex-col gap-2 items-center">
-              {pdfData ? (
-                <button
-                  onClick={() => handleViewPdf()}
-                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
-                >
-                  Visualizar Nota Fiscal{isImageFile(pdfData.fileName) ? ` (${getFileExtension(pdfData.fileName)})` : ' (PDF)'}
-                </button>
+              {pdfList.length > 0 ? (
+                pdfList.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleViewPdf(item)}
+                    className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
+                  >
+                    Visualizar Nota Fiscal{pdfList.length > 1 ? ` ${i + 1}` : ""}
+                    {isImageFile(item.fileName) ? ` (${getFileExtension(item.fileName)})` : " (PDF)"}
+                  </button>
+                ))
               ) : (
                 <p className="text-sm md:text-base lg:text-lg text-gray-400">
                   Nenhum arquivo anexado
