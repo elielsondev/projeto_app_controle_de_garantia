@@ -35,7 +35,9 @@ function RegistrationNote() {
   const [extendedWarrantyPdfName, setExtendedWarrantyPdfName] = useState("");
   const [hasExistingExtendedPdf, setHasExistingExtendedPdf] = useState(false);
   
-  const [assistanceWarrantyPdf, setAssistanceWarrantyPdf] = useState<File | null>(null);
+  // Variáveis mantidas para compatibilidade com notas antigas que podem ter "Garantia de Assistência"
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [assistanceWarrantyPdf] = useState<File | null>(null);
   const [assistanceWarrantyPdfName, setAssistanceWarrantyPdfName] = useState("");
   const [hasExistingAssistancePdf, setHasExistingAssistancePdf] = useState(false);
 
@@ -181,18 +183,6 @@ function RegistrationNote() {
       if (file.type === "application/pdf") {
         setExtendedWarrantyPdf(file);
         setExtendedWarrantyPdfName(file.name);
-      } else {
-        showToast("Por favor, selecione apenas arquivos PDF", "error");
-      }
-    }
-  };
-
-  const handleAssistanceWarrantyPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.type === "application/pdf") {
-        setAssistanceWarrantyPdf(file);
-        setAssistanceWarrantyPdfName(file.name);
       } else {
         showToast("Por favor, selecione apenas arquivos PDF", "error");
       }
@@ -654,7 +644,6 @@ function RegistrationNote() {
             >
               <option value="">Selecione o tipo de garantia</option>
               <option value="Garantia Legal">Garantia Legal</option>
-              <option value="Garantia de Assistência">Garantia de Assistência</option>
               <option value="Garantia Estendida">Garantia Estendida</option>
             </select>
             
@@ -746,96 +735,6 @@ function RegistrationNote() {
                         }}
                         className="p-2 text-gray-400 hover:text-red-600 transition"
                         aria-label="Remover PDF da garantia estendida"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Campos condicionais para Garantia de Assistência */}
-          {formData.typeNote === "Garantia de Assistência" && (
-            <>
-              {/* Fim da Garantia de Assistência */}
-              <div>
-                <label htmlFor="assistanceWarrantyDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
-                  Fim da Garantia de Assistência <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="assistanceWarrantyDate"
-                  name="assistanceWarrantyDate"
-                  value={formData.assistanceWarrantyDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
-                  required
-                />
-              </div>
-
-              {/* Upload PDF Garantia de Assistência */}
-              <div>
-                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-                  Upload de Garantia de Assistência (PDF)
-                </label>
-                {!assistanceWarrantyPdf && !hasExistingAssistancePdf ? (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
-                      </p>
-                      <p className="text-xs text-gray-500">PDF (MAX. 10MB)</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleAssistanceWarrantyPdfChange}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-red-100 rounded flex items-center justify-center">
-                        <span className="text-red-600 font-bold text-sm">PDF</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">{assistanceWarrantyPdfName}</p>
-                        {assistanceWarrantyPdf && (
-                          <p className="text-xs text-gray-500">
-                            {(assistanceWarrantyPdf.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        )}
-                        {hasExistingAssistancePdf && !assistanceWarrantyPdf && (
-                          <p className="text-xs text-gray-500">PDF existente</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {hasExistingAssistancePdf && !assistanceWarrantyPdf && (
-                        <label className="p-2 text-[#724EBF] hover:text-[#5a3a9f] transition cursor-pointer">
-                          <Upload className="w-5 h-5" />
-                          <input
-                            type="file"
-                            accept=".pdf"
-                            onChange={handleAssistanceWarrantyPdfChange}
-                            className="hidden"
-                            aria-label="Atualizar PDF da garantia de assistência"
-                          />
-                        </label>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAssistanceWarrantyPdf(null);
-                          setAssistanceWarrantyPdfName("");
-                          setHasExistingAssistancePdf(false);
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-600 transition"
-                        aria-label="Remover PDF da garantia de assistência"
                       >
                         <X className="w-5 h-5" />
                       </button>
