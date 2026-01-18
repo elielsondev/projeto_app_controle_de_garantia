@@ -470,7 +470,7 @@ function RegistrationNote() {
           </button>
 
           <h1 className="text-2xl font-bold text-[#724EBF]">
-            {isEditMode ? "Editar Nota" : "Cadastrar Nova Nota"}
+            {isEditMode ? "Editar Nota" : "Cadastrar Novo Aparelho"}
           </h1>
         </div>
 
@@ -883,7 +883,7 @@ function RegistrationNote() {
               type="submit"
               className="w-full py-3 bg-[#724EBF] text-white font-semibold rounded-lg hover:bg-[#5a3a9f] transition-colors shadow-md"
             >
-              {isEditMode ? "Salvar Alterações" : "Cadastrar Nova Nota"}
+              {isEditMode ? "Salvar Alterações" : "Cadastrar Novo Aparelho"}
             </button>
           </div>
         </form>

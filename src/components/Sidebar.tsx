@@ -52,7 +52,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Header do menu */}
         <div className="flex items-center justify-between p-4">
           <span className="text-lg font-semibold">Menu</span>
-          <button onClick={onClose}>
+          <button onClick={onClose} aria-label="Fechar menu">
             <X size={22} />
           </button>
         </div>
@@ -71,7 +71,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 className="flex items-center gap-2 font-medium w-full text-left hover:text-purple-200 transition-colors"
               >
                 <FileText size={18} />
-                Minhas Notas
+                Meus Aparelhos
               </button>
             </div>
 

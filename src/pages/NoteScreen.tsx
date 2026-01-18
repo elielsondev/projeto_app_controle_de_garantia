@@ -547,7 +547,7 @@ function NoteScreen() {
               transition
             `}
             >
-              {isInTrash() ? "Restaurar Nota" : "Mover para Lixeira"}
+              {isInTrash() ? "restaurar" : "Mover para Lixeira"}
             </button>
           </div>
         </div>
