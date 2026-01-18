@@ -546,7 +546,7 @@ function NoteScreen() {
         </div>
 
         <div className="flex flex-col mt-8 md:mt-12">
-          <label htmlFor="notes" className="font-semibold text-xl md:text-2xl mb-2 md:mb-3">Observações:</label>
+          <label htmlFor="notes" className="font-semibold text-xl md:text-2xl mb-2 md:mb-3">Observações</label>
           <textarea
             name="notes"
             rows={5}
