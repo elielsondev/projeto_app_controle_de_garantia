@@ -27,6 +27,7 @@ function AppContent() {
         <Route path="/registration-note" element={<RegistrationNote />} />
         <Route path="/trash" element={<Trash />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>

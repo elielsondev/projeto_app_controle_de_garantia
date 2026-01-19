@@ -108,6 +108,11 @@ const Home = () => {
         return false;
       }
 
+      // Filtro por título
+      if (filterState.title && !note.title.toLowerCase().includes(filterState.title.toLowerCase())) {
+        return false;
+      }
+
       return true;
     });
 

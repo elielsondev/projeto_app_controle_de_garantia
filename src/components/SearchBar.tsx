@@ -20,9 +20,10 @@ const SearchBar = ({ onFilterChange, onSearchChange }: SearchBarProps) => {
   };
 
   const handleFilterApply = (filters: FilterState) => {
-    if (onFilterChange) {
-      onFilterChange(filters);
-    }
+    onFilterChange({
+      ...filters,
+      title: searchText,
+    });
     setIsFilterOpen(false);
   };
 
@@ -30,12 +31,7 @@ const SearchBar = ({ onFilterChange, onSearchChange }: SearchBarProps) => {
     <>
       <div className="flex justify-center items-center">
         <div className="flex items-center bg-gray-50 rounded-xl shadow w-full gap-3 h-9 m-5 p-6">
-          <button
-            className="p-2 rounded-lg hover:bg-gray-100 transition bg-transparent"
-            aria-label="busca"
-          >
-            <Search className="w-6 h-6 text-gray-600" />
-          </button>
+          <Search className="w-6 h-6 text-gray-600" />
 
           <input
             type="text"
