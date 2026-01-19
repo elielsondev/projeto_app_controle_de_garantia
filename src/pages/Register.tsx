@@ -76,10 +76,7 @@ function Register() {
       >
         <div className="flex items-center justify-center gap-2 mb-6 mt-3">
           <img src={logo} alt="Logo Aponti" width={50} />
-          <h2
-            className="text-2xl font-bold text-[#5f1bf2] leading-none"
-            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.25)" }}
-          >
+          <h2 className="text-2xl font-bold text-[#5f1bf2] leading-none [text-shadow:2px_2px_4px_rgba(0,0,0,0.25)]">
             apontiNote
           </h2>
         </div>
