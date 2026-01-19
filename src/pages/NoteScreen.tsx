@@ -241,21 +241,19 @@ function NoteScreen() {
           localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
         }
 
-        // Verificar se é uma nota fixa (id <= 4) ou uma nota do localStorage
         const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
         const isFixedNote = note.id <= 4 && !savedNotas.find((n: Nota) => n.id === note.id);
 
+        // Sempre remover de "notas" (notas editadas podem estar em savedNotas)
+        const updatedNotas = savedNotas.filter((n: Nota) => n.id !== note.id);
+        localStorage.setItem("notas", JSON.stringify(updatedNotas));
+
         if (isFixedNote) {
-          // Se for uma nota fixa, adicionar ao array de deletadas
           const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
           if (!deletedNotes.includes(note.id)) {
             deletedNotes.push(note.id);
             localStorage.setItem("deletedNotes", JSON.stringify(deletedNotes));
           }
-        } else {
-          // Se for uma nota do localStorage, remover normalmente
-          const updatedNotas = savedNotas.filter((n: Nota) => n.id !== note.id);
-          localStorage.setItem("notas", JSON.stringify(updatedNotas));
         }
 
         // Remover PDFs da lista principal (mas manter na lixeira)

@@ -22,15 +22,16 @@ const Home = () => {
   const [allNotas, setAllNotas] = useState<Nota[]>(notas);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Função para carregar notas
+  // Função para carregar notas (exclui as que estão na lixeira)
   const loadNotas = () => {
-    // Carregar notas do localStorage
     const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
-    // Carregar lista de notas fixas deletadas
     const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
-    // Filtrar notas fixas que não foram deletadas
+    const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
+    const trashIds = new Set(trashNotes.map((n: Nota) => n.id));
     const activeFixedNotas = notas.filter((n: Nota) => !deletedNotes.includes(n.id));
-    setAllNotas([...activeFixedNotas, ...savedNotas]);
+    const merged = [...activeFixedNotas, ...savedNotas];
+    const notInTrash = merged.filter((n: Nota) => !trashIds.has(n.id));
+    setAllNotas(notInTrash);
   };
 
   useEffect(() => {

@@ -21,21 +21,20 @@ const Trash = () => {
     loadTrashNotes();
   }, []);
 
-  // Atualizar quando voltar para a página (caso alguma nota seja adicionada)
+  // Atualizar quando voltar para a página ou when notesUpdated
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleReload = () => {
       loadTrashNotes();
     };
 
-    // Listener para mudanças no localStorage
-    window.addEventListener("storage", handleStorageChange);
-
-    // Também verificar quando a página recebe foco novamente
-    window.addEventListener("focus", handleStorageChange);
+    window.addEventListener("storage", handleReload);
+    window.addEventListener("focus", handleReload);
+    window.addEventListener("notesUpdated", handleReload);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("focus", handleStorageChange);
+      window.removeEventListener("storage", handleReload);
+      window.removeEventListener("focus", handleReload);
+      window.removeEventListener("notesUpdated", handleReload);
     };
   }, []);
 
@@ -152,19 +151,27 @@ const Trash = () => {
       if (result.isConfirmed) {
         const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
         const trashPdfs = JSON.parse(localStorage.getItem("trashPdfs") || "{}");
+        const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
+        const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
         const updatedTrashNotes = trashNotes.filter((n: Nota) => !selectedNotes.has(n.id));
 
-        // Remover PDFs permanentemente
         selectedNotes.forEach((noteId) => {
           delete trashPdfs[noteId];
+          delete trashAssistancePdfs[noteId];
+          delete trashExtendedPdfs[noteId];
         });
+
+        // Remover também de "notas" para que não voltem à Home (ex.: dados antigos que ficaram em ambos)
+        const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
+        const updatedNotas = savedNotas.filter((n: Nota) => !selectedNotes.has(n.id));
+        localStorage.setItem("notas", JSON.stringify(updatedNotas));
 
         localStorage.setItem("trashNotes", JSON.stringify(updatedTrashNotes));
         localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
+        localStorage.setItem("trashAssistancePdfs", JSON.stringify(trashAssistancePdfs));
+        localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
 
         loadTrashNotes();
-
-        // Disparar evento customizado para atualizar a Home
         window.dispatchEvent(new Event("notesUpdated"));
 
         showToast(`${selectedNotes.size} nota(s) foi(ram) excluída(s) permanentemente.`, "success");
@@ -186,12 +193,19 @@ const Trash = () => {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
+        // IDs das notas que serão excluídas (antes de limpar a lixeira)
+        const idsToRemove = new Set(deletedNotes.map((n: Nota) => n.id));
+        // Remover de "notas" para que não voltem à Home
+        const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
+        const updatedNotas = savedNotas.filter((n: Nota) => !idsToRemove.has(n.id));
+        localStorage.setItem("notas", JSON.stringify(updatedNotas));
+
         localStorage.setItem("trashNotes", JSON.stringify([]));
         localStorage.setItem("trashPdfs", JSON.stringify({}));
+        localStorage.setItem("trashAssistancePdfs", JSON.stringify({}));
+        localStorage.setItem("trashExtendedPdfs", JSON.stringify({}));
 
         loadTrashNotes();
-
-        // Disparar evento customizado para atualizar a Home
         window.dispatchEvent(new Event("notesUpdated"));
 
         showToast("Todas as notas foram excluídas permanentemente.", "success");
