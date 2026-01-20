@@ -1,7 +1,7 @@
 // import React from "react";
 import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 // Componente de registro de usuário / cadastro
@@ -10,7 +10,16 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const navigate = useNavigate();
+  const navigate = useNavigate();  
+
+  useEffect(() => {
+    const isAdminLoggedIn = sessionStorage.getItem("loginAdmin");
+
+    if (isAdminLoggedIn  !== "true" || isAdminLoggedIn === null) {
+      navigate("/auth-admin");
+    return;
+  }
+  }, [navigate]);
 
   // Registrar cadastro no array de usuários no localStorage
   const handleRegister = (e: React.FormEvent) => {
@@ -28,7 +37,7 @@ function Register() {
     // Verificar se o usuário já existe no localStorage
     const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
     const userExists = existingUsers.some(
-      (user: { email: string }) => user.email === email
+      (user: { email: string }) => user.email === email,
     );
     if (userExists) {
       Swal.fire({

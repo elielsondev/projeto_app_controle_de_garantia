@@ -9,12 +9,13 @@ import NoteScreen from "./pages/NoteScreen";
 import RegistrationNote from "./pages/RegistrationNote";
 import Trash from "./pages/trash";
 import Settings from "./pages/Settings";
+import AuthAdmin from "./pages/AuthAdmin";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
 import { ToastContainer } from "./components/Toast";
 
 function AppContent() {
   const { toasts, removeToast } = useToast();
-
+  
   return (
     <div className="text-center">
       <Routes>
@@ -28,6 +29,7 @@ function AppContent() {
         <Route path="/trash" element={<Trash />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/auth-admin" element={<AuthAdmin />} />
       </Routes>
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>

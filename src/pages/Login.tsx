@@ -130,7 +130,7 @@ function Login() {
         </div>
         <hr className="border-t border-[#724EBF] mb-2" />
         <div>
-          <Link to="/register" className=" text-black hover:underline">
+          <Link to="/auth-admin" className=" text-black hover:underline">
             Não tem uma conta? Cadastre-se
           </Link>
         </div>
