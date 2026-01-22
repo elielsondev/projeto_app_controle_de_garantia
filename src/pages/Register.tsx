@@ -1,7 +1,7 @@
 // import React from "react";
 import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 // Componente de registro de usuário / cadastro
@@ -10,7 +10,17 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const navigate = useNavigate();
+  const [cargo, setCargo] = useState("");
+  const navigate = useNavigate();  
+
+  useEffect(() => {
+    const isAdminLoggedIn = sessionStorage.getItem("loginAdmin");
+
+    if (isAdminLoggedIn  !== "true" || isAdminLoggedIn === null) {
+      navigate("/auth-admin");
+    return;
+  }
+  }, [navigate]);
 
   // Registrar cadastro no array de usuários no localStorage
   const handleRegister = (e: React.FormEvent) => {
@@ -28,7 +38,7 @@ function Register() {
     // Verificar se o usuário já existe no localStorage
     const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
     const userExists = existingUsers.some(
-      (user: { email: string }) => user.email === email
+      (user: { email: string }) => user.email === email,
     );
     if (userExists) {
       Swal.fire({
@@ -48,6 +58,7 @@ function Register() {
       userName,
       email,
       password,
+      cargo: cargo || "",
     };
     users.push(user);
     localStorage.setItem("users", JSON.stringify(users));
@@ -57,6 +68,7 @@ function Register() {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
+    setCargo("");
 
     // SweetAlert2 para mostrar mensagem de sucesso
     Swal.fire({
@@ -76,10 +88,7 @@ function Register() {
       >
         <div className="flex items-center justify-center gap-2 mb-6 mt-3">
           <img src={logo} alt="Logo Aponti" width={50} />
-          <h2
-            className="text-2xl font-bold text-[#5f1bf2] leading-none"
-            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.25)" }}
-          >
+          <h2 className="text-2xl font-bold text-[#5f1bf2] leading-none [text-shadow:2px_2px_4px_rgba(0,0,0,0.25)]">
             apontiNote
           </h2>
         </div>
@@ -104,6 +113,16 @@ function Register() {
           placeholder="Email"
           className="px-5 py-2 mx-5 mb-1 bg-[#bfbfbf] text-black rounded-xl border-none outline-none cursor-pointer"
           required
+        />
+
+        <input
+          type="text"
+          name="cargo"
+          value={cargo}
+          onChange={(e) => setCargo(e.target.value)}
+          id="cargo-register"
+          placeholder="Cargo"
+          className="px-5 py-2 mx-5 mb-1 bg-[#bfbfbf] text-black rounded-xl border-none outline-none cursor-pointer"
         />
 
         <input

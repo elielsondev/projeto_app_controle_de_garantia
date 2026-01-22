@@ -1,39 +1,55 @@
 import { type ResumoItem } from "../data";
-import activeIcon from "../assets/activeIcon.png";
-import attentionIcon from "../assets/attentionIcon.png";
-import documentIcon from "../assets/documentIcon.png";
-import expiringIcon from "../assets/expiringIcon.png";
+import { FileText, Clock, CheckCircle, XCircle } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
-interface SummaryCardProps extends ResumoItem {}
+interface SummaryCardProps extends ResumoItem {
+  isActive: boolean;
+  onClick: (status: ResumoItem["status"]) => void;
+}
 
-const SummaryCard = ({ title, value, status }: SummaryCardProps) => {
-  const colors: Record<ResumoItem["status"], string> = {
-    total: "bg-[#0000]",
-    expiring: "bg-[#0000]",
-    active: "bg-[#0000]",
-    expired: "bg-[#0000]",
-  };
+const statusIcons: Record<ResumoItem["status"], LucideIcon> = {
+  total: FileText,
+  expiring: Clock,
+  active: CheckCircle,
+  expired: XCircle,
+};
 
-  const valueColors: Record<ResumoItem["status"], string> = {
-    total: "text-black",
-    expiring: "text-[#FFBE07]",
-    active: "text-[#478E2C]",
-    expired: "text-[#D41414]",
-  };
+const valueColors: Record<ResumoItem["status"], string> = {
+  total: "text-black-600",
+  expiring: "text-yellow-600",
+  active: "text-green-600",
+  expired: "text-red-600",
+};
 
-  const statusIcons: Record<ResumoItem["status"], string> = {
-    total: documentIcon,
-    expiring: expiringIcon,
-    active: activeIcon,
-    expired: attentionIcon,
-  };
+const iconColors: Record<ResumoItem["status"], string> = {
+  total: "#724EBF",
+  expiring: "#FFBE07",
+  active: "#478E2C",
+  expired: "#D41414",
+};
+
+const SummaryCard = ({ title, value, status, isActive, onClick }: SummaryCardProps) => {
+  const Icon = statusIcons[status];
+  const iconColor = iconColors[status];
 
   return (
-    <div className={`relative rounded-2xl sm:rounded-3xl p-2 m-1 sm:p-4 md:p-5 shadow-md border transition-transform duration-300 md:hover:scale-98 md:hover:shadow-xl ${colors[status]}`}>
-      <p className={`text-lg sm:text-xl md:text-2xl font-bold ${valueColors[status]}`}>{value}</p>
-      <p className="text-xs sm:text-sm">{title}</p>
-      <span className="absolute right-3 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 opacity-75">
-        <img src={statusIcons[status]} alt={title} className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain" />
+    <div
+      onClick={() => onClick(status)}
+      className={`
+        relative cursor-pointer rounded-2xl sm:rounded-3xl p-6 m-1 sm:p-5 md:p-6
+        shadow-md border transition-all duration-300
+        ${isActive ? "border-purple-600 scale-95" : "hover:scale-98"}
+      `}
+    >
+      <div className="flex flex-col text-left">
+        <p className="font-medium text-xs sm:text-sm">{title}</p>
+        <p className={`text-lg sm:text-xl md:text-2xl font-bold ${valueColors[status]}`}>
+          {value}
+        </p>
+      </div>
+
+      <span className="absolute right-3 top-1/2 -translate-y-1/2">
+        <Icon className="w-7 h-7" style={{ color: iconColor }} />
       </span>
     </div>
   );

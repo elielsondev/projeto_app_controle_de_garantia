@@ -1,5 +1,4 @@
 import { useState } from "react";
-import userIcon from "../assets/userIcon.png";
 import { Squash as Hamburger } from "hamburger-react";
 import Sidebar from "./Sidebar";
 
@@ -15,17 +14,6 @@ const Header = () => {
           toggled={menuOpen}
           toggle={setMenuOpen}
         />
-
-        <button
-          className="p-2 rounded-lg hover:bg-white/10 transition"
-          aria-label="perfil"
-        >
-          <img
-            src={userIcon}
-            alt="perfil"
-            className="w-7 h-7 object-contain"
-          />
-        </button>
       </header>
 
       <Sidebar

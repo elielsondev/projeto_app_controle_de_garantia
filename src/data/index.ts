@@ -9,72 +9,17 @@ export interface Nota {
     title: string;
     store: string;
     purchaseDate: string;
+    dueDate:string;
     typeNote: string;
+    createdBy: string;
     value: number;
-    status: string;
+    status: "Ativa" | "Vencida" | "Vencendo";
+    createdAt: string;
+    numeroNota: string;
+    phone?: string;
+    observations?: string;
 }
 
-export const resumo: ResumoItem[] = [
-    { title: "Total", value: 12, status: "total" },
-    { title: "Vencendo", value: 3, status: "expiring" },
-    { title: "Ativas", value: 12, status: "active" },
-    { title: "Vencidas", value: 3, status: "expired" },
-];
+export const notas: Nota[] = [];
 
-export const notas: Nota[] = [
-    {
-        id: 1,
-        title: "Monitor Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Normal",
-        value: 1000,
-        status: "Em garantia",
-    },
-    {
-        id: 2,
-        title: "Teclado Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Estendida",
-        value: 1000,
-        status: "Vencida",
-    },
-    {
-        id: 1,
-        title: "Monitor Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Normal",
-        value: 1000,
-        status: "Em garantia",
-    },
-    {
-        id: 2,
-        title: "Teclado Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Estendida",
-        value: 1000,
-        status: "Vencida",
-    },
-    {
-        id: 1,
-        title: "Monitor Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Normal",
-        value: 1000,
-        status: "Em garantia",
-    },
-    {
-        id: 2,
-        title: "Teclado Dell",
-        store: "Magazine Luiza",
-        purchaseDate: "12/02/2025",
-        typeNote: "Garantia Estendida",
-        value: 1000,
-        status: "Vencida",
-    },
-];
 
