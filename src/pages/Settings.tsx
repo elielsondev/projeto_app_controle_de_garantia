@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Edit2, X, Check } from "lucide-react";
+import { LogOut, X, Check } from "lucide-react";
 import Swal from "sweetalert2";
 import Header from "../components/Header.tsx";
 import ProfilePhoto from "../components/ProfilePhoto";
@@ -265,9 +265,8 @@ export default function SettingsPage() {
                                    {!isEditing ? (
                                         <button 
                                              onClick={handleEdit}
-                                             className="px-8 py-3 rounded-lg bg-[#724EBF] text-white font-semibold hover:bg-[#5a3a9f] transition flex items-center gap-2"
+                                             className="px-8 py-3 rounded-lg bg-[#724EBF] text-white font-semibold hover:bg-[#5a3a9f] transition"
                                         >
-                                             <Edit2 className="w-4 h-4" />
                                              Editar
                                         </button>
                                    ) : (
