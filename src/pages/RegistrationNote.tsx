@@ -31,15 +31,14 @@ function RegistrationNote() {
   // Lista de notas fiscais (permite múltiplos anexos)
   const [pdfFileList, setPdfFileList] = useState<PdfListItem[]>([]);
   
-  // PDFs adicionais para garantias
-  const [extendedWarrantyPdf, setExtendedWarrantyPdf] = useState<File | null>(null);
-  const [extendedWarrantyPdfName, setExtendedWarrantyPdfName] = useState("");
-  const [hasExistingExtendedPdf, setHasExistingExtendedPdf] = useState(false);
+  // Lista de anexos de garantia estendida (permite múltiplos)
+  const [extendedWarrantyFileList, setExtendedWarrantyFileList] = useState<PdfListItem[]>([]);
   
   // Variáveis mantidas para compatibilidade com notas antigas que podem ter "Garantia de Assistência"
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [assistanceWarrantyPdf] = useState<File | null>(null);
   const [assistanceWarrantyPdfName, setAssistanceWarrantyPdfName] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [hasExistingAssistancePdf, setHasExistingAssistancePdf] = useState(false);
 
   // Função para formatar valor ao carregar
@@ -93,8 +92,9 @@ function RegistrationNote() {
       }
       
       if (extendedWarrantyPdfs[noteToEdit.id]) {
-        setHasExistingExtendedPdf(true);
-        setExtendedWarrantyPdfName(extendedWarrantyPdfs[noteToEdit.id].fileName || "PDF anexado");
+        const raw = extendedWarrantyPdfs[noteToEdit.id];
+        const list = Array.isArray(raw) ? raw : [{ fileName: raw.fileName || "PDF anexado", data: raw.data }];
+        setExtendedWarrantyFileList(list.map((f: { fileName: string; data: string }) => ({ fileName: f.fileName, data: f.data })));
       }
       
       if (assistanceWarrantyPdfs[noteToEdit.id]) {
@@ -186,17 +186,23 @@ function RegistrationNote() {
     setPdfFileList((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleExtendedWarrantyPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
-      if (isValidType) {
-        setExtendedWarrantyPdf(file);
-        setExtendedWarrantyPdfName(file.name);
-      } else {
-        showToast("Por favor, selecione apenas arquivos PDF ou imagens", "error");
+  const handleExtendedWarrantyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length) {
+      const toAdd: PdfListItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
+        if (isValidType) toAdd.push({ file, fileName: file.name });
+        else showToast(`"${file.name}": use apenas PDF ou imagens`, "error");
       }
+      if (toAdd.length) setExtendedWarrantyFileList((prev) => [...prev, ...toAdd]);
+      e.target.value = "";
     }
+  };
+
+  const removeExtendedWarrantyFromList = (index: number) => {
+    setExtendedWarrantyFileList((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Função para determinar o tipo de arquivo e retornar estilo/ícone
@@ -358,8 +364,9 @@ function RegistrationNote() {
 
       // Contar PDFs a processar (apenas os que precisam de conversão assíncrona)
       const hasNewNotaPdfs = pdfFileList.some((x) => x.file);
+      const hasNewExtendedWarrantyPdfs = extendedWarrantyFileList.some((x) => x.file);
       if (hasNewNotaPdfs) pdfsToProcess++;
-      if (extendedWarrantyPdf) pdfsToProcess++;
+      if (hasNewExtendedWarrantyPdfs) pdfsToProcess++;
       if (assistanceWarrantyPdf) pdfsToProcess++;
 
       // Persistir lista de notas fiscais (apenas .data, sem conversão)
@@ -372,15 +379,22 @@ function RegistrationNote() {
         localStorage.setItem("notaPdfs", JSON.stringify(pdfs));
       };
 
+      // Persistir lista de garantia estendida (apenas .data)
+      const saveExtendedWarrantyList = () => {
+        const extendedResult = extendedWarrantyFileList
+          .filter((x): x is PdfListItem & { data: string } => !!x.data)
+          .map((x) => ({ fileName: x.fileName, data: x.data }));
+        if (extendedResult.length) extendedWarrantyPdfs[updatedNote.id] = extendedResult;
+        else delete extendedWarrantyPdfs[updatedNote.id];
+        localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
+      };
+
       // Se não há PDFs para processar (async), salvar o que temos e redirecionar
       if (pdfsToProcess === 0) {
         saveNotaPdfList();
+        saveExtendedWarrantyList();
         if (isEditMode && noteToEdit) {
-          if (!hasExistingExtendedPdf && extendedWarrantyPdfs[noteToEdit.id]) {
-            delete extendedWarrantyPdfs[noteToEdit.id];
-            localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
-          }
-          if (!hasExistingAssistancePdf && assistanceWarrantyPdfs[noteToEdit.id]) {
+          if (!assistanceWarrantyPdf && assistanceWarrantyPdfs[noteToEdit.id]) {
             delete assistanceWarrantyPdfs[noteToEdit.id];
             localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
           }
@@ -445,23 +459,32 @@ function RegistrationNote() {
           .finally(checkAllPdfsProcessed);
       }
 
-      // Processar PDF garantia estendida
-      if (extendedWarrantyPdf) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          extendedWarrantyPdfs[updatedNote.id] = {
-            fileName: extendedWarrantyPdfName,
-            data: base64String,
-          };
-          localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
-          checkAllPdfsProcessed();
-        };
-        reader.onerror = () => {
-          showToast("Erro ao processar o PDF da garantia estendida", "error");
-          checkAllPdfsProcessed(); // Contar mesmo em caso de erro para não travar
-        };
-        reader.readAsDataURL(extendedWarrantyPdf);
+      // Processar PDFs da garantia estendida (múltiplos)
+      if (hasNewExtendedWarrantyPdfs) {
+        const newItems = extendedWarrantyFileList.filter((x): x is PdfListItem & { file: File } => !!x.file);
+        const existingItems = extendedWarrantyFileList
+          .filter((x): x is PdfListItem & { data: string } => !!x.data)
+          .map((x) => ({ fileName: x.fileName, data: x.data }));
+
+        const convertFile = (item: { file: File; fileName: string }) =>
+          new Promise<{ fileName: string; data: string }>((resolve, reject) => {
+            const r = new FileReader();
+            r.onloadend = () => resolve({ fileName: item.fileName, data: r.result as string });
+            r.onerror = () => reject(new Error("Erro ao processar " + item.fileName));
+            r.readAsDataURL(item.file);
+          });
+
+        Promise.all(newItems.map(convertFile))
+          .then((converted) => {
+            const merged = [...existingItems, ...converted];
+            if (merged.length) extendedWarrantyPdfs[updatedNote.id] = merged;
+            else delete extendedWarrantyPdfs[updatedNote.id];
+            localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
+          })
+          .catch(() => {
+            showToast("Erro ao processar um ou mais arquivos da garantia estendida", "error");
+          })
+          .finally(checkAllPdfsProcessed);
       }
 
       // Processar PDF garantia de assistência
@@ -714,75 +737,64 @@ function RegistrationNote() {
                 />
               </div>
 
-              {/* Upload PDF/Imagem Garantia Estendida */}
+              {/* Upload PDF/Imagem Garantia Estendida - múltiplos */}
               <div>
                 <label className="block text-left text-sm font-medium text-gray-700 mb-2">
                   Upload de Garantia Estendida (PDF ou Imagem)
                 </label>
-                {!extendedWarrantyPdf && !hasExistingExtendedPdf ? (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Clique para fazer upload</span> ou arraste o arquivo
-                      </p>
-                      <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB)</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
-                      onChange={handleExtendedWarrantyPdfChange}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 ${getFileTypeInfo(extendedWarrantyPdfName, extendedWarrantyPdf).bgColor} rounded flex items-center justify-center`}>
-                        <span className={`${getFileTypeInfo(extendedWarrantyPdfName, extendedWarrantyPdf).textColor} font-bold text-sm`}>
-                          {getFileTypeInfo(extendedWarrantyPdfName, extendedWarrantyPdf).label}
-                        </span>
+                <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de um arquivo de garantia estendida.</p>
+                {extendedWarrantyFileList.length > 0 && (
+                  <div className="space-y-2 mb-2">
+                    {extendedWarrantyFileList.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
+                            <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
+                              {getFileTypeInfo(item.fileName, item.file).label}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
+                            {item.file && (
+                              <p className="text-xs text-gray-500">
+                                {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            )}
+                            {item.data && !item.file && (
+                              <p className="text-xs text-gray-500">Arquivo existente</p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeExtendedWarrantyFromList(idx)}
+                          className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
+                          aria-label={`Remover ${item.fileName}`}
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">{extendedWarrantyPdfName}</p>
-                        {extendedWarrantyPdf && (
-                          <p className="text-xs text-gray-500">
-                            {(extendedWarrantyPdf.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        )}
-                        {hasExistingExtendedPdf && !extendedWarrantyPdf && (
-                          <p className="text-xs text-gray-500">Arquivo existente</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {hasExistingExtendedPdf && !extendedWarrantyPdf && (
-                        <label className="p-2 text-[#724EBF] hover:text-[#5a3a9f] transition cursor-pointer">
-                          <Upload className="w-5 h-5" />
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
-                            onChange={handleExtendedWarrantyPdfChange}
-                            className="hidden"
-                            aria-label="Atualizar arquivo da garantia estendida"
-                          />
-                        </label>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setExtendedWarrantyPdf(null);
-                          setExtendedWarrantyPdfName("");
-                          setHasExistingExtendedPdf(false);
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-600 transition"
-                        aria-label="Remover PDF da garantia estendida"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 )}
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                  <div className="flex flex-col items-center justify-center py-3">
+                    <Upload className="w-8 h-8 mb-1 text-gray-400" />
+                    <p className="text-sm text-gray-500">
+                      <span className="font-semibold">{extendedWarrantyFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
+                      {extendedWarrantyFileList.length ? "" : " ou arraste os arquivos"}
+                    </p>
+                    <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
+                    multiple
+                    onChange={handleExtendedWarrantyFileChange}
+                    className="hidden"
+                    aria-label="Anexar garantias estendidas"
+                  />
+                </label>
               </div>
             </>
           )}

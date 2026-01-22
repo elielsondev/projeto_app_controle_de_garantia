@@ -101,14 +101,19 @@ function NoteScreen() {
     ? trashAssistancePdfs[note.id] 
     : assistanceWarrantyPdfs[note.id];
   
-  // Carregar dados adicionais para Garantia Estendida
+  // Carregar dados adicionais para Garantia Estendida (suporta múltiplos anexos)
   const extendedWarrantyDates = JSON.parse(localStorage.getItem("extendedWarrantyDates") || "{}");
   const extendedWarrantyPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
   const trashExtendedPdfs = JSON.parse(localStorage.getItem("trashExtendedPdfs") || "{}");
   const extendedWarrantyDate = extendedWarrantyDates[note.id];
-  const extendedWarrantyPdfData = isInTrash() 
+  const extendedWarrantyRaw = isInTrash() 
     ? trashExtendedPdfs[note.id] 
     : extendedWarrantyPdfs[note.id];
+  const extendedWarrantyList: { fileName: string; data: string }[] = !extendedWarrantyRaw
+    ? []
+    : Array.isArray(extendedWarrantyRaw)
+      ? extendedWarrantyRaw
+      : [{ fileName: extendedWarrantyRaw.fileName || "PDF anexado", data: extendedWarrantyRaw.data }];
   
   // Verificar se é Garantia de Assistência ou Garantia Estendida
   const isAssistanceWarranty = note.typeNote === "Garantia de Assistência";
@@ -235,9 +240,9 @@ function NoteScreen() {
           localStorage.setItem("trashAssistancePdfs", JSON.stringify(trashAssistancePdfs));
         }
         
-        // Salvar PDF de garantia estendida na lixeira se existir
-        if (isExtendedWarranty && extendedWarrantyPdfData) {
-          trashExtendedPdfs[note.id] = extendedWarrantyPdfData;
+        // Salvar PDF(s) de garantia estendida na lixeira se existir(em)
+        if (isExtendedWarranty && extendedWarrantyRaw) {
+          trashExtendedPdfs[note.id] = extendedWarrantyRaw;
           localStorage.setItem("trashExtendedPdfs", JSON.stringify(trashExtendedPdfs));
         }
 
@@ -270,8 +275,8 @@ function NoteScreen() {
           localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistancePdfs));
         }
         
-        // Remover PDF de garantia estendida da lista principal se existir
-        if (isExtendedWarranty && extendedWarrantyPdfData) {
+        // Remover PDF(s) de garantia estendida da lista principal se existir(em)
+        if (isExtendedWarranty && extendedWarrantyRaw) {
           const extendedPdfs = JSON.parse(localStorage.getItem("extendedWarrantyPdfs") || "{}");
           delete extendedPdfs[note.id];
           localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedPdfs));
@@ -437,15 +442,16 @@ function NoteScreen() {
                 </button>
               )}
               
-              {/* Arquivo de Garantia Estendida */}
-              {isExtendedWarranty && extendedWarrantyPdfData && (
+              {/* Arquivos de Garantia Estendida (múltiplos) */}
+              {isExtendedWarranty && extendedWarrantyList.length > 0 && extendedWarrantyList.map((item, idx) => (
                 <button
-                  onClick={() => handleViewPdf(extendedWarrantyPdfData)}
-                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
+                  key={idx}
+                  onClick={() => handleViewPdf(item)}
+                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF] block text-left"
                 >
-                  Visualizar Garantia Estendida{isImageFile(extendedWarrantyPdfData.fileName) ? ` (${getFileExtension(extendedWarrantyPdfData.fileName)})` : ' (PDF)'}
+                  Visualizar Garantia Estendida{extendedWarrantyList.length > 1 ? ` ${idx + 1}` : ""}{isImageFile(item.fileName) ? ` (${getFileExtension(item.fileName)})` : " (PDF)"} – {item.fileName}
                 </button>
-              )}
+              ))}
             </div>
           </div>
 
