@@ -10,6 +10,7 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [cargo, setCargo] = useState("");
   const navigate = useNavigate();  
 
   useEffect(() => {
@@ -57,6 +58,7 @@ function Register() {
       userName,
       email,
       password,
+      cargo: cargo || "",
     };
     users.push(user);
     localStorage.setItem("users", JSON.stringify(users));
@@ -66,6 +68,7 @@ function Register() {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
+    setCargo("");
 
     // SweetAlert2 para mostrar mensagem de sucesso
     Swal.fire({
@@ -110,6 +113,16 @@ function Register() {
           placeholder="Email"
           className="px-5 py-2 mx-5 mb-1 bg-[#bfbfbf] text-black rounded-xl border-none outline-none cursor-pointer"
           required
+        />
+
+        <input
+          type="text"
+          name="cargo"
+          value={cargo}
+          onChange={(e) => setCargo(e.target.value)}
+          id="cargo-register"
+          placeholder="Cargo"
+          className="px-5 py-2 mx-5 mb-1 bg-[#bfbfbf] text-black rounded-xl border-none outline-none cursor-pointer"
         />
 
         <input
