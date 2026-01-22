@@ -71,7 +71,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 className="flex items-center gap-2 font-medium w-full text-left hover:text-purple-200 transition-colors"
               >
                 <FileText size={18} />
-                Meus Aparelhos
+                Meus Produtos
               </button>
             </div>
 

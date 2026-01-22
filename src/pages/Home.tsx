@@ -182,11 +182,11 @@ const Home = () => {
       {filteredAndSortedNotas.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-4">
           <h2 className="text-2xl font-semibold text-gray-700 mb-2">
-            Nenhum aparelho encontrado
+            Nenhum produto encontrado
           </h2>
           <p className="text-gray-500 text-center max-w-md">
             {allNotas.length === 0
-              ? "Você ainda não possui aparelhos cadastrados. Clique no botão + para cadastrar um!"
+              ? "Você ainda não possui produtos cadastrados. Clique no botão + para cadastrar um!"
               : "Nenhuma nota corresponde aos filtros aplicados. Tente ajustar os filtros ou limpar a busca."}
           </p>
         </div>

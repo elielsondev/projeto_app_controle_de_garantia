@@ -275,7 +275,7 @@ const Trash = () => {
             Sua lixeira está vazia
           </h2>
           <p className="text-gray-500 text-center max-w-md">
-            Notas excluídas aparecerão aqui e poderão ser restauradas ou excluídas permanentemente.
+            Aparelhos excluídos aparecerão aqui e poderão ser restaurados ou excluídos permanentemente.
           </p>
         </div>
       ) : (
