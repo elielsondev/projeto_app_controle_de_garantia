@@ -22,8 +22,8 @@ const FilterModal = ({ isOpen, onClose, onApplyFilters }: FilterModalProps) => {
           sortOrder: "asc",
      });
 
-     const statusOptions = ["Ativa", "Vencida", "Vencendo"];
-     const typeNoteOptions = ["Garantia Legal", "Garantia Estendida"];
+     const statusOptions = ["Em Garantia", "Vencida", "Vencendo"];
+     const typeNoteOptions = ["Garantia Legal", "Garantia Estendida", "Garantia de Assistência"];
 
      const handleStatusToggle = (status: string) => {
           setFilters((prev) => ({
@@ -58,7 +58,9 @@ const FilterModal = ({ isOpen, onClose, onApplyFilters }: FilterModalProps) => {
      };
 
      const handleApply = () => {
-          onApplyFilters(filters);
+          if (onApplyFilters) {
+               onApplyFilters(filters);
+          }
           onClose();
      };
 
@@ -70,7 +72,9 @@ const FilterModal = ({ isOpen, onClose, onApplyFilters }: FilterModalProps) => {
                sortOrder: "asc",
           };
           setFilters(resetFilters);
-          onApplyFilters(resetFilters);
+          if (onApplyFilters) {
+               onApplyFilters(resetFilters);
+          }
           onClose();
      };
 
@@ -144,7 +148,7 @@ const FilterModal = ({ isOpen, onClose, onApplyFilters }: FilterModalProps) => {
                                                   onChange={() => handleTypeToggle(type)}
                                                   className="sr-only"
                                              />
-                                             {type.replace("Garantia ", "")}
+                                             {type === "Garantia de Assistência" ? "Assistência" : type.replace("Garantia ", "")}
                                         </label>
                                    ))}
                               </div>

@@ -20,10 +20,9 @@ const SearchBar = ({ onFilterChange, onSearchChange }: SearchBarProps) => {
   };
 
   const handleFilterApply = (filters: FilterState) => {
-    onFilterChange({
-      ...filters,
-      title: searchText,
-    });
+    if (onFilterChange) {
+      onFilterChange(filters);
+    }
     setIsFilterOpen(false);
   };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header.tsx";
 import SearchBar from "../components/SearchBar.tsx";
@@ -22,8 +22,53 @@ const Home = () => {
   const [allNotas, setAllNotas] = useState<Nota[]>(notas);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Função para carregar notas (exclui as que estão na lixeira)
-  const loadNotas = useCallback(() => {
+  // Função para calcular status considerando todas as datas de garantia
+  const calculateStatusWithAllWarranties = (
+    dueDate: string,
+    warrantyTypes: string[],
+    extendedWarrantyDate?: string,
+    assistanceWarrantyDate?: string
+  ): "Em Garantia" | "Vencida" | "Vencendo" => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Função para converter data DD/MM/YYYY para Date
+    const parseDateToDate = (dateStr: string): Date => {
+      const [day, month, year] = dateStr.split("/").map(Number);
+      return new Date(year, month - 1, day);
+    };
+
+    // Array para armazenar todas as datas de garantia
+    const warrantyDates: Date[] = [];
+
+    // Sempre adicionar a data principal (fim da garantia)
+    warrantyDates.push(parseDateToDate(dueDate));
+
+    // Se tiver Garantia Estendida e data preenchida, adicionar
+    if (warrantyTypes.includes("Garantia Estendida") && extendedWarrantyDate) {
+      warrantyDates.push(parseDateToDate(extendedWarrantyDate));
+    }
+
+    // Se tiver Garantia de Assistência e data preenchida, adicionar
+    if (warrantyTypes.includes("Garantia de Assistência") && assistanceWarrantyDate) {
+      warrantyDates.push(parseDateToDate(assistanceWarrantyDate));
+    }
+
+    // Encontrar a data mais distante no futuro (mais recente)
+    const furthestDate = warrantyDates.reduce((latest, current) => {
+      return current > latest ? current : latest;
+    });
+
+    // Calcular dias até a data mais distante
+    const daysUntilDue = Math.ceil((furthestDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilDue < 0) return "Vencida";
+    if (daysUntilDue <= 30) return "Vencendo";
+    return "Em Garantia";
+  };
+
+  // Função para carregar notas (exclui as que estão na lixeira) e recalcular status
+  const loadNotas = () => {
     const savedNotas = JSON.parse(localStorage.getItem("notas") || "[]");
     const deletedNotes = JSON.parse(localStorage.getItem("deletedNotes") || "[]");
     const trashNotes = JSON.parse(localStorage.getItem("trashNotes") || "[]");
@@ -31,8 +76,52 @@ const Home = () => {
     const activeFixedNotas = notas.filter((n: Nota) => !deletedNotes.includes(n.id));
     const merged = [...activeFixedNotas, ...savedNotas];
     const notInTrash = merged.filter((n: Nota) => !trashIds.has(n.id));
-    setAllNotas(notInTrash);
-  }, []);
+
+    // Carregar datas adicionais de garantias
+    const extendedWarrantyDates = JSON.parse(localStorage.getItem("extendedWarrantyDates") || "{}");
+    const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
+
+    // Recalcular status para cada nota considerando todas as garantias
+    const notasWithUpdatedStatus = notInTrash.map((note: Nota) => {
+      const warrantyTypes = note.typeNote ? note.typeNote.split(",").map(t => t.trim()) : [];
+      const extendedDate = extendedWarrantyDates[note.id];
+      const assistanceDate = assistanceWarrantyDates[note.id];
+
+      const newStatus = calculateStatusWithAllWarranties(
+        note.dueDate,
+        warrantyTypes,
+        extendedDate,
+        assistanceDate
+      );
+
+      return {
+        ...note,
+        status: newStatus,
+      };
+    });
+
+    // Atualizar notas no localStorage com status recalculado
+    const updatedSavedNotas = savedNotas.map((note: Nota) => {
+      const warrantyTypes = note.typeNote ? note.typeNote.split(",").map(t => t.trim()) : [];
+      const extendedDate = extendedWarrantyDates[note.id];
+      const assistanceDate = assistanceWarrantyDates[note.id];
+
+      const newStatus = calculateStatusWithAllWarranties(
+        note.dueDate,
+        warrantyTypes,
+        extendedDate,
+        assistanceDate
+      );
+
+      return {
+        ...note,
+        status: newStatus,
+      };
+    });
+
+    localStorage.setItem("notas", JSON.stringify(updatedSavedNotas));
+    setAllNotas(notasWithUpdatedStatus);
+  };
 
   useEffect(() => {
     const isLoggedInLocal = localStorage.getItem("isLoggedIn");
@@ -72,7 +161,7 @@ const Home = () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("notesUpdated", handleCustomEvent);
     };
-  }, [navigate, loadNotas]);
+  }, [navigate]);
 
   // Função para converter data DD/MM/YYYY para Date
   const parseDate = (dateStr: string): Date => {
@@ -94,7 +183,7 @@ const Home = () => {
       }
 
       // Filtro por status do card (mantém compatibilidade)
-      if (activeFilter === "active" && note.status !== "Ativa") return false;
+      if (activeFilter === "active" && note.status !== "Em Garantia") return false;
       if (activeFilter === "expired" && note.status !== "Vencida") return false;
       if (activeFilter === "expiring" && note.status !== "Vencendo") return false;
 
@@ -103,9 +192,16 @@ const Home = () => {
         return false;
       }
 
-      // Filtro por tipo de garantia
-      if (filterState.typeNote.length > 0 && !filterState.typeNote.includes(note.typeNote)) {
-        return false;
+      // Filtro por tipo de garantia (suporta múltiplas garantias separadas por vírgula)
+      if (filterState.typeNote.length > 0) {
+        const noteWarrantyTypes = note.typeNote ? note.typeNote.split(",").map(t => t.trim()) : [];
+        const hasMatchingWarranty = filterState.typeNote.some(selectedType => {
+          const trimmedSelectedType = selectedType.trim();
+          return noteWarrantyTypes.some(noteType => noteType.trim() === trimmedSelectedType);
+        });
+        if (!hasMatchingWarranty) {
+          return false;
+        }
       }
 
       // Filtro por título
@@ -143,7 +239,7 @@ const Home = () => {
   const totalCount = allNotas.length;
 
   const activeCount = allNotas.filter(
-    note => note.status === "Ativa"
+    note => note.status === "Em Garantia"
   ).length;
 
   const expiredCount = allNotas.filter(
@@ -157,7 +253,7 @@ const Home = () => {
   const summaryData: ResumoItem[] = [
     { title: "Total", value: totalCount, status: "total" },
     { title: "Vencendo", value: expiringCount, status: "expiring" },
-    { title: "Ativas", value: activeCount, status: "active" },
+    { title: "Em Garantia", value: activeCount, status: "active" },
     { title: "Vencidas", value: expiredCount, status: "expired" },
   ];
 

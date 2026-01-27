@@ -50,7 +50,7 @@ function NoteScreen() {
   // Função para obter cor do status
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Ativa":
+      case "Em Garantia":
         return "bg-[#558941]/15 text-[#478E2C]";
       case "Vencendo":
         return "bg-[#CA8A04]/15 text-[#CA8A04]";
@@ -64,7 +64,7 @@ function NoteScreen() {
   // Função para obter ícone do status (igual ao SummaryCard)
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "Ativa":
+      case "Em Garantia":
         return CheckCircle;
       case "Vencendo":
         return Clock;
@@ -92,14 +92,19 @@ function NoteScreen() {
       ? pdfDataRaw
       : [{ fileName: pdfDataRaw.fileName || "PDF anexado", data: pdfDataRaw.data }];
   
-  // Carregar dados adicionais para Garantia de Assistência
+  // Carregar dados adicionais para Garantia de Assistência (suporta múltiplos anexos)
   const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
   const assistanceWarrantyPdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
   const trashAssistancePdfs = JSON.parse(localStorage.getItem("trashAssistancePdfs") || "{}");
   const assistanceWarrantyDate = assistanceWarrantyDates[note.id];
-  const assistanceWarrantyPdfData = isInTrash() 
+  const assistanceWarrantyRaw = isInTrash() 
     ? trashAssistancePdfs[note.id] 
     : assistanceWarrantyPdfs[note.id];
+  const assistanceWarrantyList: { fileName: string; data: string }[] = !assistanceWarrantyRaw
+    ? []
+    : Array.isArray(assistanceWarrantyRaw)
+      ? assistanceWarrantyRaw
+      : [{ fileName: assistanceWarrantyRaw.fileName || "PDF anexado", data: assistanceWarrantyRaw.data }];
   
   // Carregar dados adicionais para Garantia Estendida (suporta múltiplos anexos)
   const extendedWarrantyDates = JSON.parse(localStorage.getItem("extendedWarrantyDates") || "{}");
@@ -115,9 +120,11 @@ function NoteScreen() {
       ? extendedWarrantyRaw
       : [{ fileName: extendedWarrantyRaw.fileName || "PDF anexado", data: extendedWarrantyRaw.data }];
   
-  // Verificar se é Garantia de Assistência ou Garantia Estendida
-  const isAssistanceWarranty = note.typeNote === "Garantia de Assistência";
-  const isExtendedWarranty = note.typeNote === "Garantia Estendida";
+  // Verificar quais tipos de garantia estão presentes (suporta múltiplas garantias)
+  const warrantyTypes = note.typeNote ? note.typeNote.split(",").map(t => t.trim()) : [];
+  const hasLegalWarranty = warrantyTypes.includes("Garantia Legal");
+  const isAssistanceWarranty = warrantyTypes.includes("Garantia de Assistência");
+  const isExtendedWarranty = warrantyTypes.includes("Garantia Estendida");
 
   // Função para formatar telefone brasileiro
   const formatPhone = (phone: string): string => {
@@ -235,8 +242,8 @@ function NoteScreen() {
         }
         
         // Salvar PDF de assistência na lixeira se existir
-        if (isAssistanceWarranty && assistanceWarrantyPdfData) {
-          trashAssistancePdfs[note.id] = assistanceWarrantyPdfData;
+        if (isAssistanceWarranty && assistanceWarrantyRaw) {
+          trashAssistancePdfs[note.id] = assistanceWarrantyRaw;
           localStorage.setItem("trashAssistancePdfs", JSON.stringify(trashAssistancePdfs));
         }
         
@@ -269,7 +276,7 @@ function NoteScreen() {
         }
         
         // Remover PDF de assistência da lista principal se existir
-        if (isAssistanceWarranty && assistanceWarrantyPdfData) {
+        if (isAssistanceWarranty && assistanceWarrantyRaw) {
           const assistancePdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
           delete assistancePdfs[note.id];
           localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistancePdfs));
@@ -326,7 +333,7 @@ function NoteScreen() {
           localStorage.setItem("trashPdfs", JSON.stringify(trashPdfs));
         }
         
-        // Restaurar PDF de assistência se existir na lixeira
+        // Restaurar PDF(s) de assistência se existir(em) na lixeira
         if (isAssistanceWarranty && trashAssistancePdfs[note.id]) {
           const assistancePdfs = JSON.parse(localStorage.getItem("assistanceWarrantyPdfs") || "{}");
           assistancePdfs[note.id] = trashAssistancePdfs[note.id];
@@ -415,32 +422,23 @@ function NoteScreen() {
 
             {/* Arquivos disponíveis */}
             <div className="mt-2 md:mt-3 flex flex-col gap-2 items-center">
-              {pdfList.length > 0 ? (
+              {/* Arquivos de Garantia Legal (Notas Fiscais) */}
+              {hasLegalWarranty && pdfList.length > 0 ? (
                 pdfList.map((item, i) => (
                   <button
                     key={i}
                     onClick={() => handleViewPdf(item)}
                     className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
                   >
-                    Visualizar Nota Fiscal{pdfList.length > 1 ? ` ${i + 1}` : ""}
+                    Visualizar Garantia Legal{pdfList.length > 1 ? ` ${i + 1}` : ""}
                     {isImageFile(item.fileName) ? ` (${getFileExtension(item.fileName)})` : " (PDF)"}
                   </button>
                 ))
-              ) : (
+              ) : hasLegalWarranty && pdfList.length === 0 ? (
                 <p className="text-sm md:text-base lg:text-lg text-gray-400">
-                  Nenhum arquivo anexado
+                  Nenhum arquivo de Garantia Legal anexado
                 </p>
-              )}
-              
-              {/* Arquivo de Garantia de Assistência */}
-              {isAssistanceWarranty && assistanceWarrantyPdfData && (
-                <button
-                  onClick={() => handleViewPdf(assistanceWarrantyPdfData)}
-                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF]"
-                >
-                  Visualizar Garantia de Assistência{isImageFile(assistanceWarrantyPdfData.fileName) ? ` (${getFileExtension(assistanceWarrantyPdfData.fileName)})` : ' (PDF)'}
-                </button>
-              )}
+              ) : null}
               
               {/* Arquivos de Garantia Estendida (múltiplos) */}
               {isExtendedWarranty && extendedWarrantyList.length > 0 && extendedWarrantyList.map((item, idx) => (
@@ -449,9 +447,29 @@ function NoteScreen() {
                   onClick={() => handleViewPdf(item)}
                   className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF] block text-left"
                 >
-                  Visualizar Garantia Estendida{extendedWarrantyList.length > 1 ? ` ${idx + 1}` : ""}{isImageFile(item.fileName) ? ` (${getFileExtension(item.fileName)})` : " (PDF)"} – {item.fileName}
+                  Visualizar Garantia Estendida{extendedWarrantyList.length > 1 ? ` ${idx + 1}` : ""}
+                  {isImageFile(item.fileName) ? ` (${getFileExtension(item.fileName)})` : " (PDF)"}
                 </button>
               ))}
+              
+              {/* Arquivos de Garantia de Assistência (múltiplos) */}
+              {isAssistanceWarranty && assistanceWarrantyList.length > 0 && assistanceWarrantyList.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleViewPdf(item)}
+                  className="font-semibold hover:underline text-sm md:text-base lg:text-lg transition text-[#724EBF] block text-left"
+                >
+                  Visualizar Garantia de Assistência{assistanceWarrantyList.length > 1 ? ` ${idx + 1}` : ""}
+                  {isImageFile(item.fileName) ? ` (${getFileExtension(item.fileName)})` : " (PDF)"}
+                </button>
+              ))}
+              
+              {/* Mensagem quando não há nenhum arquivo */}
+              {!hasLegalWarranty && !isExtendedWarranty && !isAssistanceWarranty && (
+                <p className="text-sm md:text-base lg:text-lg text-gray-400">
+                  Nenhum arquivo anexado
+                </p>
+              )}
             </div>
           </div>
 
@@ -476,7 +494,7 @@ function NoteScreen() {
               <div className="flex flex-row items-start gap-2 mt-10">
                 <ClockAlert color="#724EBF" size={35} className="shrink-0" />
                 <div className="flex flex-col">
-                  <p className="font-semibold text-sm md:text-base">Fim da Garantia:</p>
+                  <p className="font-semibold text-sm md:text-base">Fim da Garantia Legal:</p>
                   <p className="text-sm md:text-base">{note.dueDate}</p>
                 </div>
               </div>
