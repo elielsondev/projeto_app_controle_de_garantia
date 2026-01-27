@@ -633,18 +633,18 @@ function RegistrationNote() {
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Título e Botão de Voltar - Alinhados Horizontalmente */}
-        <div className="relative flex items-center justify-center mb-6">
+        {/* Título e Botão de Voltar */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-center mb-6 gap-3 md:gap-0">
           {/* Botão de Voltar - Apenas Mobile */}
           <button
             onClick={handleGoBack}
-            className="md:hidden absolute left-0 flex items-center gap-2 text-[#724EBF] hover:text-[#5a3a9f] transition"
+            className="md:hidden flex items-center gap-2 text-[#724EBF] hover:text-[#5a3a9f] transition self-start"
           >
             <CircleArrowLeft className="w-6 h-6" />
             <span className="font-medium">Voltar</span>
           </button>
 
-          <h1 className="text-2xl font-bold text-[#724EBF]">
+          <h1 className="text-2xl font-bold text-[#724EBF] text-center md:text-center">
             {isEditMode ? "Editar Nota" : "Cadastrar Novo Produto"}
           </h1>
         </div>
