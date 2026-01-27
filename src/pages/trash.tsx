@@ -218,7 +218,7 @@ const Trash = () => {
       <Header />
 
       {/* Título da Página e Barra de Ações */}
-      <div className="w-full px-5 sm:px-15 mt-5 mb-5">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-12 mt-5 mb-5">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Trash2 size={24} /> Lixeira
@@ -279,7 +279,7 @@ const Trash = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 px-9">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 sm:px-6 md:px-8 lg:px-9">
           {deletedNotes.map((note) => (
             <TrashNoteItem
               key={note.id}
