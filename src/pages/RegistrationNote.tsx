@@ -23,7 +23,7 @@ function RegistrationNote() {
     dueDate: "",
     phone: "",
     observations: "",
-    typeNote: "",
+    typeNote: [] as string[], // Array para suportar múltiplas garantias
     value: "",
     extendedWarrantyDate: "", // Data fim garantia estendida
     assistanceWarrantyDate: "", // Data fim garantia de assistência
@@ -34,12 +34,8 @@ function RegistrationNote() {
   // Lista de anexos de garantia estendida (permite múltiplos)
   const [extendedWarrantyFileList, setExtendedWarrantyFileList] = useState<PdfListItem[]>([]);
   
-  // Variáveis mantidas para compatibilidade com notas antigas que podem ter "Garantia de Assistência"
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [assistanceWarrantyPdf] = useState<File | null>(null);
-  const [assistanceWarrantyPdfName, setAssistanceWarrantyPdfName] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hasExistingAssistancePdf, setHasExistingAssistancePdf] = useState(false);
+  // Lista de anexos de garantia de assistência (permite múltiplos)
+  const [assistanceWarrantyFileList, setAssistanceWarrantyFileList] = useState<PdfListItem[]>([]);
 
   // Função para formatar valor ao carregar
   const formatValueForInput = (value: number): string => {
@@ -66,6 +62,11 @@ function RegistrationNote() {
       const extendedDate = extendedWarrantyDates[noteToEdit.id] ? convertDateToInput(extendedWarrantyDates[noteToEdit.id]) : "";
       const assistanceDate = assistanceWarrantyDates[noteToEdit.id] ? convertDateToInput(assistanceWarrantyDates[noteToEdit.id]) : "";
 
+      // Converter typeNote de string para array (suporta formato antigo com vírgula ou novo formato)
+      const typeNoteArray = noteToEdit.typeNote 
+        ? noteToEdit.typeNote.split(",").map(t => t.trim()).filter(t => t)
+        : [];
+
       setFormData({
         numeroNota: noteToEdit.numeroNota || "",
         title: noteToEdit.title || "",
@@ -74,7 +75,7 @@ function RegistrationNote() {
         dueDate: noteToEdit.dueDate ? convertDateToInput(noteToEdit.dueDate) : "",
         phone: noteToEdit.phone || "",
         observations: noteToEdit.observations || "",
-        typeNote: noteToEdit.typeNote || "",
+        typeNote: typeNoteArray,
         value: formatValueForInput(noteToEdit.value),
         extendedWarrantyDate: extendedDate,
         assistanceWarrantyDate: assistanceDate,
@@ -98,8 +99,9 @@ function RegistrationNote() {
       }
       
       if (assistanceWarrantyPdfs[noteToEdit.id]) {
-        setHasExistingAssistancePdf(true);
-        setAssistanceWarrantyPdfName(assistanceWarrantyPdfs[noteToEdit.id].fileName || "PDF anexado");
+        const raw = assistanceWarrantyPdfs[noteToEdit.id];
+        const list = Array.isArray(raw) ? raw : [{ fileName: raw.fileName || "PDF anexado", data: raw.data }];
+        setAssistanceWarrantyFileList(list.map((f: { fileName: string; data: string }) => ({ fileName: f.fileName, data: f.data })));
       }
     }
   }, [noteToEdit]);
@@ -167,6 +169,29 @@ function RegistrationNote() {
     }
   };
 
+  // Handler para checkboxes de tipo de garantia
+  const handleWarrantyTypeChange = (warrantyType: string, checked: boolean) => {
+    setFormData((prev) => {
+      const currentTypes = prev.typeNote;
+      if (checked) {
+        // Adicionar garantia se não estiver na lista
+        if (!currentTypes.includes(warrantyType)) {
+          return {
+            ...prev,
+            typeNote: [...currentTypes, warrantyType],
+          };
+        }
+      } else {
+        // Remover garantia da lista
+        return {
+          ...prev,
+          typeNote: currentTypes.filter((t) => t !== warrantyType),
+        };
+      }
+      return prev;
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files?.length) {
@@ -203,6 +228,25 @@ function RegistrationNote() {
 
   const removeExtendedWarrantyFromList = (index: number) => {
     setExtendedWarrantyFileList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAssistanceWarrantyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length) {
+      const toAdd: PdfListItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isValidType = file.type === "application/pdf" || file.type.startsWith("image/");
+        if (isValidType) toAdd.push({ file, fileName: file.name });
+        else showToast(`"${file.name}": use apenas PDF ou imagens`, "error");
+      }
+      if (toAdd.length) setAssistanceWarrantyFileList((prev) => [...prev, ...toAdd]);
+      e.target.value = "";
+    }
+  };
+
+  const removeAssistanceWarrantyFromList = (index: number) => {
+    setAssistanceWarrantyFileList((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Função para determinar o tipo de arquivo e retornar estilo/ícone
@@ -242,25 +286,69 @@ function RegistrationNote() {
     return `${day}/${month}/${year}`;
   };
 
-  const calculateStatus = (dueDate: string): "Ativa" | "Vencida" | "Vencendo" => {
-    const [day, month, year] = dueDate.split("/").map(Number);
-    const due = new Date(year, month - 1, day);
+  // Função para converter data DD/MM/YYYY para Date
+  const parseDateToDate = (dateStr: string): Date => {
+    const [day, month, year] = dateStr.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  // Função para calcular status considerando todas as datas de garantia
+  const calculateStatusWithAllWarranties = (
+    dueDate: string,
+    warrantyTypes: string[],
+    extendedWarrantyDate?: string,
+    assistanceWarrantyDate?: string
+  ): "Em Garantia" | "Vencida" | "Vencendo" => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const daysUntilDue = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    // Array para armazenar todas as datas de garantia
+    const warrantyDates: Date[] = [];
+
+    // Sempre adicionar a data principal (fim da garantia)
+    warrantyDates.push(parseDateToDate(dueDate));
+
+    // Se tiver Garantia Estendida e data preenchida, adicionar
+    if (warrantyTypes.includes("Garantia Estendida") && extendedWarrantyDate) {
+      warrantyDates.push(parseDateToDate(formatDate(extendedWarrantyDate)));
+    }
+
+    // Se tiver Garantia de Assistência e data preenchida, adicionar
+    if (warrantyTypes.includes("Garantia de Assistência") && assistanceWarrantyDate) {
+      warrantyDates.push(parseDateToDate(formatDate(assistanceWarrantyDate)));
+    }
+
+    // Encontrar a data mais distante no futuro (mais recente)
+    const furthestDate = warrantyDates.reduce((latest, current) => {
+      return current > latest ? current : latest;
+    });
+
+    // Calcular dias até a data mais distante
+    const daysUntilDue = Math.ceil((furthestDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysUntilDue < 0) return "Vencida";
     if (daysUntilDue <= 30) return "Vencendo";
-    return "Ativa";
+    return "Em Garantia";
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validação dos campos obrigatórios
-    if (!formData.numeroNota || !formData.title || !formData.store || !formData.purchaseDate || !formData.dueDate || !formData.typeNote || !formData.value) {
+    if (!formData.numeroNota || !formData.title || !formData.store || !formData.purchaseDate || !formData.dueDate || formData.typeNote.length === 0 || !formData.value) {
       showToast("Por favor, preencha todos os campos marcados com *", "warning");
+      return;
+    }
+
+    // Validação específica para Garantia Estendida
+    if (formData.typeNote.includes("Garantia Estendida") && !formData.extendedWarrantyDate) {
+      showToast("Por favor, preencha a data do fim da garantia estendida", "warning");
+      return;
+    }
+
+    // Validação específica para Garantia de Assistência
+    if (formData.typeNote.includes("Garantia de Assistência") && !formData.assistanceWarrantyDate) {
+      showToast("Por favor, preencha a data do fim da garantia de assistência", "warning");
       return;
     }
 
@@ -295,10 +383,15 @@ function RegistrationNote() {
         store: formData.store,
         purchaseDate: formatDate(formData.purchaseDate),
         dueDate: formatDate(formData.dueDate),
-        typeNote: formData.typeNote,
+        typeNote: formData.typeNote.join(", "), // Converter array para string separada por vírgula
         createdBy: createdBy, // Atualiza com o usuário atual que está editando
         value: formData.value ? parseFloat(formData.value.replace(/\./g, "").replace(",", ".")) : 0,
-        status: calculateStatus(formatDate(formData.dueDate)),
+        status: calculateStatusWithAllWarranties(
+          formatDate(formData.dueDate),
+          formData.typeNote,
+          formData.extendedWarrantyDate,
+          formData.assistanceWarrantyDate
+        ),
         phone: formData.phone || undefined,
         observations: formData.observations || undefined,
       };
@@ -326,10 +419,15 @@ function RegistrationNote() {
         store: formData.store,
         purchaseDate: formatDate(formData.purchaseDate),
         dueDate: formatDate(formData.dueDate),
-        typeNote: formData.typeNote,
+        typeNote: formData.typeNote.join(", "), // Converter array para string separada por vírgula
         createdBy: createdBy,
         value: formData.value ? parseFloat(formData.value.replace(/\./g, "").replace(",", ".")) : 0,
-        status: calculateStatus(formatDate(formData.dueDate)),
+        status: calculateStatusWithAllWarranties(
+          formatDate(formData.dueDate),
+          formData.typeNote,
+          formData.extendedWarrantyDate,
+          formData.assistanceWarrantyDate
+        ),
         createdAt: getCurrentDateFormatted(),
         phone: formData.phone || undefined,
         observations: formData.observations || undefined,
@@ -347,12 +445,12 @@ function RegistrationNote() {
     const assistanceWarrantyDates = JSON.parse(localStorage.getItem("assistanceWarrantyDates") || "{}");
 
     // Salvar datas adicionais
-    if (formData.typeNote === "Garantia Estendida" && formData.extendedWarrantyDate) {
+    if (formData.typeNote.includes("Garantia Estendida") && formData.extendedWarrantyDate) {
       extendedWarrantyDates[updatedNote.id] = formatDate(formData.extendedWarrantyDate);
       localStorage.setItem("extendedWarrantyDates", JSON.stringify(extendedWarrantyDates));
     }
 
-    if (formData.typeNote === "Garantia de Assistência" && formData.assistanceWarrantyDate) {
+    if (formData.typeNote.includes("Garantia de Assistência") && formData.assistanceWarrantyDate) {
       assistanceWarrantyDates[updatedNote.id] = formatDate(formData.assistanceWarrantyDate);
       localStorage.setItem("assistanceWarrantyDates", JSON.stringify(assistanceWarrantyDates));
     }
@@ -365,9 +463,10 @@ function RegistrationNote() {
       // Contar PDFs a processar (apenas os que precisam de conversão assíncrona)
       const hasNewNotaPdfs = pdfFileList.some((x) => x.file);
       const hasNewExtendedWarrantyPdfs = extendedWarrantyFileList.some((x) => x.file);
+      const hasNewAssistanceWarrantyPdfs = assistanceWarrantyFileList.some((x) => x.file);
       if (hasNewNotaPdfs) pdfsToProcess++;
       if (hasNewExtendedWarrantyPdfs) pdfsToProcess++;
-      if (assistanceWarrantyPdf) pdfsToProcess++;
+      if (hasNewAssistanceWarrantyPdfs) pdfsToProcess++;
 
       // Persistir lista de notas fiscais (apenas .data, sem conversão)
       const saveNotaPdfList = () => {
@@ -389,16 +488,21 @@ function RegistrationNote() {
         localStorage.setItem("extendedWarrantyPdfs", JSON.stringify(extendedWarrantyPdfs));
       };
 
+      // Persistir lista de garantia de assistência (apenas .data)
+      const saveAssistanceWarrantyList = () => {
+        const assistanceResult = assistanceWarrantyFileList
+          .filter((x): x is PdfListItem & { data: string } => !!x.data)
+          .map((x) => ({ fileName: x.fileName, data: x.data }));
+        if (assistanceResult.length) assistanceWarrantyPdfs[updatedNote.id] = assistanceResult;
+        else delete assistanceWarrantyPdfs[updatedNote.id];
+        localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
+      };
+
       // Se não há PDFs para processar (async), salvar o que temos e redirecionar
       if (pdfsToProcess === 0) {
         saveNotaPdfList();
         saveExtendedWarrantyList();
-        if (isEditMode && noteToEdit) {
-          if (!assistanceWarrantyPdf && assistanceWarrantyPdfs[noteToEdit.id]) {
-            delete assistanceWarrantyPdfs[noteToEdit.id];
-            localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
-          }
-        }
+        saveAssistanceWarrantyList();
         
         // Mostrar toast de sucesso
         showToast(isEditMode ? "Nota atualizada com sucesso!" : "Nota cadastrada com sucesso!", "success");
@@ -487,23 +591,32 @@ function RegistrationNote() {
           .finally(checkAllPdfsProcessed);
       }
 
-      // Processar PDF garantia de assistência
-      if (assistanceWarrantyPdf) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          assistanceWarrantyPdfs[updatedNote.id] = {
-            fileName: assistanceWarrantyPdfName,
-            data: base64String,
-          };
-          localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
-          checkAllPdfsProcessed();
-        };
-        reader.onerror = () => {
-          showToast("Erro ao processar o PDF da garantia de assistência", "error");
-          checkAllPdfsProcessed(); // Contar mesmo em caso de erro para não travar
-        };
-        reader.readAsDataURL(assistanceWarrantyPdf);
+      // Processar PDFs da garantia de assistência (múltiplos)
+      if (hasNewAssistanceWarrantyPdfs) {
+        const newItems = assistanceWarrantyFileList.filter((x): x is PdfListItem & { file: File } => !!x.file);
+        const existingItems = assistanceWarrantyFileList
+          .filter((x): x is PdfListItem & { data: string } => !!x.data)
+          .map((x) => ({ fileName: x.fileName, data: x.data }));
+
+        const convertFile = (item: { file: File; fileName: string }) =>
+          new Promise<{ fileName: string; data: string }>((resolve, reject) => {
+            const r = new FileReader();
+            r.onloadend = () => resolve({ fileName: item.fileName, data: r.result as string });
+            r.onerror = () => reject(new Error("Erro ao processar " + item.fileName));
+            r.readAsDataURL(item.file);
+          });
+
+        Promise.all(newItems.map(convertFile))
+          .then((converted) => {
+            const merged = [...existingItems, ...converted];
+            if (merged.length) assistanceWarrantyPdfs[updatedNote.id] = merged;
+            else delete assistanceWarrantyPdfs[updatedNote.id];
+            localStorage.setItem("assistanceWarrantyPdfs", JSON.stringify(assistanceWarrantyPdfs));
+          })
+          .catch(() => {
+            showToast("Erro ao processar um ou mais arquivos da garantia de assistência", "error");
+          })
+          .finally(checkAllPdfsProcessed);
       }
     };
 
@@ -537,66 +650,6 @@ function RegistrationNote() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-          {/* Upload de Notas Fiscais (PDF ou Imagem) - múltiplos */}
-          <div>
-            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-              Upload de Notas Fiscais (PDF ou Imagem)
-            </label>
-            <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de uma nota fiscal.</p>
-            {pdfFileList.length > 0 && (
-              <div className="space-y-2 mb-2">
-                {pdfFileList.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
-                        <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
-                          {getFileTypeInfo(item.fileName, item.file).label}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
-                        {item.file && (
-                          <p className="text-xs text-gray-500">
-                            {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        )}
-                        {item.data && !item.file && (
-                          <p className="text-xs text-gray-500">Arquivo existente</p>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removePdfFromList(idx)}
-                      className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
-                      aria-label={`Remover ${item.fileName}`}
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-              <div className="flex flex-col items-center justify-center py-3">
-                <Upload className="w-8 h-8 mb-1 text-gray-400" />
-                <p className="text-sm text-gray-500">
-                  <span className="font-semibold">{pdfFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
-                  {pdfFileList.length ? "" : " ou arraste os arquivos"}
-                </p>
-                <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
-              </div>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
-                aria-label="Anexar notas fiscais"
-              />
-            </label>
-          </div>
-
           {/* Número da Nota */}
           <div>
             <label className="block text-left text-sm font-medium text-gray-700 mb-2">
@@ -661,10 +714,10 @@ function RegistrationNote() {
             />
           </div>
 
-          {/* Fim da Garantia */}
+          {/* Fim da Garantia Legal */}
           <div>
             <label htmlFor="dueDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
-              Fim da Garantia <span className="text-red-500">*</span>
+              Fim da Garantia Legal <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -694,110 +747,275 @@ function RegistrationNote() {
 
           {/* Tipo de Garantia */}
           <div>
-            <label htmlFor="typeNote" className="block text-left text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-left text-sm font-medium text-gray-700 mb-3">
               Tipo de Garantia <span className="text-red-500">*</span>
             </label>
-            <select
-              id="typeNote"
-              name="typeNote"
-              value={formData.typeNote}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
-              required
-            >
-              <option value="">Selecione o tipo de garantia</option>
-              <option value="Garantia Legal">Garantia Legal</option>
-              <option value="Garantia Estendida">Garantia Estendida</option>
-            </select>
             
-            {/* Descrição para Garantia Legal */}
-            {formData.typeNote === "Garantia Legal" && (
-              <p className="mt-2 text-sm text-gray-600 italic">
-                Garantias legais para bens não duráveis são de 90 dias (3 meses) a partir da entrega.
-              </p>
-            )}
-          </div>
-
-          {/* Campos condicionais para Garantia Estendida */}
-          {formData.typeNote === "Garantia Estendida" && (
-            <>
-              {/* Data do fim da garantia estendida */}
+            <div className="space-y-4">
+              {/* Checkbox Garantia Legal */}
               <div>
-                <label htmlFor="extendedWarrantyDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
-                  Data do fim da garantia estendida <span className="text-red-500">*</span>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.typeNote.includes("Garantia Legal")}
+                    onChange={(e) => handleWarrantyTypeChange("Garantia Legal", e.target.checked)}
+                    className="w-5 h-5 text-[#724EBF] border-gray-300 rounded focus:ring-2 focus:ring-[#724EBF]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Garantia Legal</span>
                 </label>
-                <input
-                  type="date"
-                  id="extendedWarrantyDate"
-                  name="extendedWarrantyDate"
-                  value={formData.extendedWarrantyDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
-                  required
-                />
-              </div>
-
-              {/* Upload PDF/Imagem Garantia Estendida - múltiplos */}
-              <div>
-                <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-                  Upload de Garantia Estendida (PDF ou Imagem)
-                </label>
-                <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de um arquivo de garantia estendida.</p>
-                {extendedWarrantyFileList.length > 0 && (
-                  <div className="space-y-2 mb-2">
-                    {extendedWarrantyFileList.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
-                            <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
-                              {getFileTypeInfo(item.fileName, item.file).label}
-                            </span>
+                
+                {/* Campo de upload aparece quando Garantia Legal está marcada */}
+                {formData.typeNote.includes("Garantia Legal") && (
+                  <div className="mt-3 ml-8">
+                    <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                      Upload de Garantia Legal (PDF ou Imagem)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de um arquivo.</p>
+                    {pdfFileList.length > 0 && (
+                      <div className="space-y-2 mb-2">
+                        {pdfFileList.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
+                                <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
+                                  {getFileTypeInfo(item.fileName, item.file).label}
+                                </span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
+                                {item.file && (
+                                  <p className="text-xs text-gray-500">
+                                    {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                )}
+                                {item.data && !item.file && (
+                                  <p className="text-xs text-gray-500">Arquivo existente</p>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removePdfFromList(idx)}
+                              className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
+                              aria-label={`Remover ${item.fileName}`}
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
-                            {item.file && (
-                              <p className="text-xs text-gray-500">
-                                {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            )}
-                            {item.data && !item.file && (
-                              <p className="text-xs text-gray-500">Arquivo existente</p>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeExtendedWarrantyFromList(idx)}
-                          className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
-                          aria-label={`Remover ${item.fileName}`}
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                      <div className="flex flex-col items-center justify-center py-3">
+                        <Upload className="w-8 h-8 mb-1 text-gray-400" />
+                        <p className="text-sm text-gray-500">
+                          <span className="font-semibold">{pdfFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
+                          {pdfFileList.length ? "" : " ou arraste os arquivos"}
+                        </p>
+                        <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        aria-label="Anexar garantia legal"
+                      />
+                    </label>
                   </div>
                 )}
-                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                  <div className="flex flex-col items-center justify-center py-3">
-                    <Upload className="w-8 h-8 mb-1 text-gray-400" />
-                    <p className="text-sm text-gray-500">
-                      <span className="font-semibold">{extendedWarrantyFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
-                      {extendedWarrantyFileList.length ? "" : " ou arraste os arquivos"}
-                    </p>
-                    <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
-                    multiple
-                    onChange={handleExtendedWarrantyFileChange}
-                    className="hidden"
-                    aria-label="Anexar garantias estendidas"
-                  />
-                </label>
               </div>
-            </>
-          )}
+
+              {/* Checkbox Garantia Estendida */}
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.typeNote.includes("Garantia Estendida")}
+                    onChange={(e) => handleWarrantyTypeChange("Garantia Estendida", e.target.checked)}
+                    className="w-5 h-5 text-[#724EBF] border-gray-300 rounded focus:ring-2 focus:ring-[#724EBF]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Garantia Estendida</span>
+                </label>
+                
+                {/* Campos aparecem quando Garantia Estendida está marcada */}
+                {formData.typeNote.includes("Garantia Estendida") && (
+                  <div className="mt-3 ml-8 space-y-4">
+                    {/* Data do fim da garantia estendida */}
+                    <div>
+                      <label htmlFor="extendedWarrantyDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
+                        Data do fim da garantia estendida <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        id="extendedWarrantyDate"
+                        name="extendedWarrantyDate"
+                        value={formData.extendedWarrantyDate}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+                        required
+                      />
+                    </div>
+
+                    {/* Upload PDF/Imagem Garantia Estendida - múltiplos */}
+                    <div>
+                      <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                        Upload de Garantia Estendida (PDF ou Imagem)
+                      </label>
+                      <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de um arquivo de garantia estendida.</p>
+                      {extendedWarrantyFileList.length > 0 && (
+                        <div className="space-y-2 mb-2">
+                          {extendedWarrantyFileList.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
+                                  <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
+                                    {getFileTypeInfo(item.fileName, item.file).label}
+                                  </span>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
+                                  {item.file && (
+                                    <p className="text-xs text-gray-500">
+                                      {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  )}
+                                  {item.data && !item.file && (
+                                    <p className="text-xs text-gray-500">Arquivo existente</p>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeExtendedWarrantyFromList(idx)}
+                                className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
+                                aria-label={`Remover ${item.fileName}`}
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                        <div className="flex flex-col items-center justify-center py-3">
+                          <Upload className="w-8 h-8 mb-1 text-gray-400" />
+                          <p className="text-sm text-gray-500">
+                            <span className="font-semibold">{extendedWarrantyFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
+                            {extendedWarrantyFileList.length ? "" : " ou arraste os arquivos"}
+                          </p>
+                          <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
+                          multiple
+                          onChange={handleExtendedWarrantyFileChange}
+                          className="hidden"
+                          aria-label="Anexar garantias estendidas"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Checkbox Garantia de Assistência */}
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.typeNote.includes("Garantia de Assistência")}
+                    onChange={(e) => handleWarrantyTypeChange("Garantia de Assistência", e.target.checked)}
+                    className="w-5 h-5 text-[#724EBF] border-gray-300 rounded focus:ring-2 focus:ring-[#724EBF]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Garantia de Assistência</span>
+                </label>
+                
+                {/* Campos aparecem quando Garantia de Assistência está marcada */}
+                {formData.typeNote.includes("Garantia de Assistência") && (
+                  <div className="mt-3 ml-8 space-y-4">
+                    {/* Data do fim da garantia de assistência */}
+                    <div>
+                      <label htmlFor="assistanceWarrantyDate" className="block text-left text-sm font-medium text-gray-700 mb-2">
+                        Data do fim da garantia de assistência <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        id="assistanceWarrantyDate"
+                        name="assistanceWarrantyDate"
+                        value={formData.assistanceWarrantyDate}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#724EBF] focus:border-transparent outline-none"
+                        required
+                      />
+                    </div>
+
+                    {/* Upload PDF/Imagem Garantia de Assistência - múltiplos */}
+                    <div>
+                      <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                        Upload de Garantia de Assistência (PDF ou Imagem)
+                      </label>
+                      <p className="text-xs text-gray-500 mb-2">Você pode anexar mais de um arquivo de garantia de assistência.</p>
+                      {assistanceWarrantyFileList.length > 0 && (
+                        <div className="space-y-2 mb-2">
+                          {assistanceWarrantyFileList.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-10 h-10 shrink-0 ${getFileTypeInfo(item.fileName, item.file).bgColor} rounded flex items-center justify-center`}>
+                                  <span className={`${getFileTypeInfo(item.fileName, item.file).textColor} font-bold text-sm`}>
+                                    {getFileTypeInfo(item.fileName, item.file).label}
+                                  </span>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-700 truncate">{item.fileName}</p>
+                                  {item.file && (
+                                    <p className="text-xs text-gray-500">
+                                      {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  )}
+                                  {item.data && !item.file && (
+                                    <p className="text-xs text-gray-500">Arquivo existente</p>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeAssistanceWarrantyFromList(idx)}
+                                className="p-2 shrink-0 text-gray-400 hover:text-red-600 transition"
+                                aria-label={`Remover ${item.fileName}`}
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                        <div className="flex flex-col items-center justify-center py-3">
+                          <Upload className="w-8 h-8 mb-1 text-gray-400" />
+                          <p className="text-sm text-gray-500">
+                            <span className="font-semibold">{assistanceWarrantyFileList.length ? "Adicionar mais" : "Clique para fazer upload"}</span>
+                            {assistanceWarrantyFileList.length ? "" : " ou arraste os arquivos"}
+                          </p>
+                          <p className="text-xs text-gray-500">PDF ou Imagens (MAX. 10MB) • múltiplos permitidos</p>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,application/pdf,image/*"
+                          multiple
+                          onChange={handleAssistanceWarrantyFileChange}
+                          className="hidden"
+                          aria-label="Anexar garantias de assistência"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Valor */}
           <div>

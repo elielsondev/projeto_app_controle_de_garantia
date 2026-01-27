@@ -10,7 +10,7 @@ interface TrashNoteItemProps {
 const TrashNoteItem = ({ note, isSelected, onSelect }: TrashNoteItemProps) => {
      const navigate = useNavigate();
      const statusColor =
-          note.status === "Ativa"
+          note.status === "Em Garantia"
                ? "text-[#478E2C]"
                : note.status === "Vencendo"
                     ? "text-[#CA8A04]"

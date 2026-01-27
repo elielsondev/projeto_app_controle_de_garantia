@@ -13,7 +13,7 @@ export interface Nota {
     typeNote: string;
     createdBy: string;
     value: number;
-    status: "Ativa" | "Vencida" | "Vencendo";
+    status: "Em Garantia" | "Vencida" | "Vencendo";
     createdAt: string;
     numeroNota: string;
     phone?: string;
